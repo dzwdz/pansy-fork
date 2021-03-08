@@ -19,3 +19,9 @@ https://bootlin.com/blog/debugging-init-failures/
 apparently the minus doesn't really mean anything, and the error is just ENOENT
 
 the fix was to compile it statically, using the -static gcc flag
+
+	GETTING THE INIT PROCESS TO LAUNCH OTHER STUFF
+so i wasn't able to launch other processes from init, even itself
+after a lot of tinkering i tried to just get busybox and use its shell as an
+init, which was useful during debugging
+haha my fucking syscall implementation was wrong fml

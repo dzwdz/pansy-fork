@@ -4,17 +4,17 @@ QEMU = qemu-system-x86_64
 kernel = /boot/vmlinuz-5.10-x86_64
 
 boot: initramfs.cpio.gz
-	 $(QEMU) -kernel $(kernel) -m 1G -nographic -append "console=ttyS0, debug=true" -initrd initramfs.cpio.gz
+	 $(QEMU) -kernel $(kernel) -m 1G -nographic -append "console=ttyS0, debug=true, root=/dev/ram0" -initrd initramfs.cpio.gz
 
 clean:
 	find . -type f -name '*.o' -delete
 	rm -r root/*
 	rm initramfs.cpio.gz
 
-initramfs.cpio.gz: root/init
+initramfs.cpio.gz: root/init root/sh
 	find root/ | cut -sd / -f 2- | cpio -ov --format=newc -Droot/ -R root:root | gzip -9 > initramfs.cpio.gz
 
-root/init: src/init.c root/lib/libc.a
+root/%: src/%.c root/lib/libc.a
 	@mkdir -p $(@D)
 	gcc -nostdlib -static $^ -o $@
 

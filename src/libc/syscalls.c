@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <sys/syscall.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 int64_t _syscall(int64_t number,
@@ -27,4 +28,21 @@ long syscall(long n, ...) {
 
 ssize_t write(int fildes, const void *buf, size_t nbyte) {
 	return syscall(SYS_write, fildes, buf, nbyte);
+}
+
+int execve(const char *path, char *const argv[], char *const envp[]) {
+	return syscall(SYS_execve, path, argv, envp);
+}
+
+
+pid_t wait(int *wstatus) {
+	return waitpid((pid_t)-1, wstatus, 0);
+}
+
+pid_t waitpid(pid_t pid, int *wstatus, int options) {
+	return syscall(SYS_wait4, pid, wstatus, options, NULL);
+}
+
+pid_t fork(void) {
+	return syscall(SYS_fork);
 }
