@@ -18,5 +18,4 @@ i was trying a bunch of random stuff to try and fix that, until i've found
 https://bootlin.com/blog/debugging-init-failures/
 apparently the minus doesn't really mean anything, and the error is just ENOENT
 
-uhh i tried downloading busybox and putting it there to see if that works, and
-it did. then i tried compiling my init again and it worked. issue solved?
+the fix was to compile it statically, using the -static gcc flag

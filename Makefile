@@ -13,8 +13,6 @@ clean:
 initramfs.cpio.gz: root/init
 	find root/ | cut -sd / -f 2- | cpio -ov --format=newc -Droot/ -R root:root | gzip -9 > initramfs.cpio.gz
 
-root/init: src/init.go
+root/init: src/init.c src/lowlevel.s
 	@mkdir -p $(@D)
-	go build -o $@ $^
-#	gcc -nostdlib $^ -o $@
-#	chmod +x root/bin/init
+	gcc -nostdlib -static $^ -o $@
