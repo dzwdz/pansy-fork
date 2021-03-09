@@ -11,3 +11,13 @@ resources
 http://tilde.town/~elly/userland.txt
 
 https://m47r1x.github.io/posts/linux-boot/
+
+todo list
+---------
+* malloc
+* http/telnet server
+* printf
+* a user system
+* basic fs tools
+* a \_start that's more similar to libc's - apparently checking the effective
+  uid is important?
