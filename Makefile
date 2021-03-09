@@ -4,12 +4,13 @@ CC     ?= gcc
 CFLAGS := ${CFLAGS}
 CFLAGS += -nostdlib -static
 CFLAGS += -Wall -Wextra -Werror
+CFLAGS += -g
 
 QEMU    = qemu-system-x86_64
 kernel  = /boot/vmlinuz-5.10-x86_64
 
 
-initramfs.cpio.gz: root/bin/init root/bin/sh
+initramfs.cpio.gz: root/bin/init root/bin/sh root/bin/args
 	cp root/bin/init root/init
 	find root/ | cut -sd / -f 2- | cpio -ov --format=newc -Droot/ -R root:root | gzip -9 > initramfs.cpio.gz
 
