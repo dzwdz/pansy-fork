@@ -71,3 +71,8 @@ void *sbrk(intptr_t increment) {
 int chdir(const char *path) {
 	return syscall(SYS_chdir, path);
 }
+
+void exit(int status) {
+	syscall(SYS_exit, status);
+	__builtin_unreachable();
+}

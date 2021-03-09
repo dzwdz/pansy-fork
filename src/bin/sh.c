@@ -1,4 +1,6 @@
+#include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
@@ -26,32 +28,77 @@ char** split_args(const char* str) {
 	char* buf_start    = sbrk(strlen(str) + 64);
 	char* buf          = buf_start;
 
+	bool quoted        = false;
+
 	while (*str != '\0') {
 		switch (*str) {
+			// WHITESPACE
 			case ' ':
 			case '\n':
 			case '\t':
+				// if we're in a quote, just add the whitespace to the buffer
+				if (quoted) {
+					*buf++ = *str;
+					break;
+				}
+
+				// ignore repeating whitespace
+				if (buf == buf_start) break;
+
 				*buf++ = '\0';
 				*parts++ = buf_start;
 				buf_start = buf;
 				break;
 
-			// todo support escaping and quotes
-			// also, repeating whitespace
+			// QUOTES
+			case '"':
+				quoted ^= true;
+				if (!quoted) {
+					*buf++ = '\0';
+					*parts++ = buf_start;
+					buf_start = buf;
+				}
+				break;
+
+			// ESCAPED CHARS
+			case '\\': {
+				char c = *++str;
+				switch (c) {
+					case 't': c = '\t'; break;
+					case 'r': c = '\r'; break;
+					case 'n': c = '\n'; break;
+					case '0': c = '\0'; break;
+				}
+				*buf++ = c;
+				break;
+			}
+
 			default:
 				*buf++ = *str;
 		}
 		str++;
 	}
 
-	*buf++ = '\0';
-	*parts++ = buf_start;
-	*parts = NULL;
+	if (buf != buf_start)  {
+		*buf++ = '\0';
+		*parts++ = buf_start;
+	}
 
+	*parts = NULL;
 	return parts_start;
 }
 
 int run(char** args) {
+	// some builtins
+	if (!strcmp(args[0], "exit"))
+		exit(0);
+
+	if (!strcmp(args[0], "cd")) {
+		chdir(args[1]);
+		return 0;
+	}
+
+	// the command isn't a builtin, try running an executable
 	if (!fork()) {
 		execve(args[0], args, env);
 		puts("pansh: execve() error");
@@ -78,8 +125,10 @@ int main(int argc __attribute__((unused)),
 		write(1, "; ", 2);
 
 		readline(buf, buf_s);
-		char** args = split_args(buf);
+		if (buf[0] == '\0')
+			continue;
 
+		char** args = split_args(buf);
 		run(args);
 	}
 
