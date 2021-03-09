@@ -8,7 +8,7 @@ int main() {
 	if (!fork()) {
 		puts("about to launch the shell");
 
-		char* const shell[] = {"/sh", NULL};
+		char* const shell[] = {"/bin/sh", NULL};
 		int r = execve(shell[0], shell, NULL);
 
 		if (r < 0) r = -r;
