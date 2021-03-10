@@ -6,16 +6,21 @@ CFLAGS += -nostdlib -static
 CFLAGS += -Wall -Wextra -Werror
 CFLAGS += -g
 
-QEMU    = qemu-system-x86_64
-kernel  = /boot/vmlinuz-5.10-x86_64
+QEMU   ?= qemu-system-x86_64
 
+KERNEL ?= /boot/vmlinuz-5.10-x86_64
+KFLAGS := ${KFLAGS},
+KFLAGS += console=ttyS0, root=/dev/ram0, 
+ifdef VERBOSE
+	KFLAGS += debug=true
+endif
 
 initramfs.cpio.gz: root/bin/init root/bin/sh root/bin/args
 	cp root/bin/init root/init
-	find root/ | cut -sd / -f 2- | cpio -ov --format=newc -Droot/ -R root:root | gzip -9 > initramfs.cpio.gz
+	find root/ | cut -sd / -f 2- | cpio -ov --format=newc -Droot/ -R root:root | gzip -9 > $@
 
 boot: initramfs.cpio.gz
-	$(QEMU) -kernel $(kernel) -m 1G -nographic -append "console=ttyS0, debug=true, root=/dev/ram0" -initrd initramfs.cpio.gz
+	$(QEMU) -kernel $(KERNEL) -m 1G -nographic -append "${KFLAGS}" -initrd $<
 
 clean:
 	find . -type f -name '*.o' -delete
