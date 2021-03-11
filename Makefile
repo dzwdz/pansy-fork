@@ -3,7 +3,7 @@
 CC     ?= gcc
 CFLAGS := ${CFLAGS}
 CFLAGS += -nostdlib -static
-CFLAGS += -Wall -Wextra -Werror
+CFLAGS += -Wall -Wextra
 CFLAGS += -g
 
 QEMU   ?= qemu-system-x86_64
@@ -15,7 +15,9 @@ ifdef VERBOSE
 	KFLAGS += debug=true
 endif
 
-initramfs.cpio.gz: root/bin/init root/bin/sh root/bin/args
+# files that the final image depends on
+fs := $(patsubst src/bin/%.c,root/bin/%,$(wildcard src/bin/*.c))
+initramfs.cpio.gz: $(fs)
 	cp root/bin/init root/init
 	find root/ | cut -sd / -f 2- | cpio -ov --format=newc -Droot/ -R root:root | gzip -9 > $@
 
@@ -33,7 +35,8 @@ root/bin/%: src/bin/%.c root/lib/libc.a
 	${CC} ${CFLAGS} $^ -o $@
 
 
-root/lib/libc.a: src/libc/lowlevel.o src/libc/syscalls.o src/libc/misc.o
+libc_obj := $(patsubst %.c,%.o,$(wildcard src/libc/*.c))
+root/lib/libc.a: src/libc/lowlevel.o $(libc_obj)
 	@mkdir -p $(@D)
 	ar rcs $@ $^
 

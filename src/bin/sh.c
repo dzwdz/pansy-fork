@@ -6,9 +6,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#define MAX_LEN 256
+
 // todo tidy this up
 // bad code ahead
-// also i'm not freeing any memory :) TODO a malloc
 
 char** env;
 
@@ -22,10 +23,16 @@ void readline(char* buf, size_t buf_size) {
 }
 
 char** split_args(const char* str) {
-	char** parts_start = sbrk(64 * sizeof(char*));
+	static
+	void*  shared_buf = NULL;
+	if (!shared_buf)
+	       shared_buf = malloc(64 * sizeof(char*)
+	                         + MAX_LEN + 64);
+
+	char** parts_start = shared_buf;
 	char** parts       = parts_start;
 
-	char* buf_start    = sbrk(strlen(str) + 64);
+	char* buf_start    = shared_buf + 64 * sizeof(char*);
 	char* buf          = buf_start;
 
 	bool quoted        = false;
@@ -115,16 +122,15 @@ int main(int argc __attribute__((unused)),
 
 	env = envp;
 
-	size_t buf_s = 128;
-	char *buf = sbrk(buf_s);
+	char *buf = malloc(MAX_LEN);
 
 	while (1) {
-		getcwd(buf, buf_s);
+		getcwd(buf, MAX_LEN);
 		puts(buf);
 
 		write(1, "; ", 2);
 
-		readline(buf, buf_s);
+		readline(buf, MAX_LEN);
 		if (buf[0] == '\0')
 			continue;
 
