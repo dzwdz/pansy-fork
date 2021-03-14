@@ -118,9 +118,7 @@ int main(int argc __attribute__((unused)),
 
 	while (1) {
 		getcwd(buf, MAX_LEN);
-		puts(buf);
-
-		write(1, "; ", 2);
+		printf("\t%s> ", buf);
 
 		readline(buf, MAX_LEN);
 		if (buf[0] == '\0')

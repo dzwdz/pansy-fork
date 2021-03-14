@@ -15,7 +15,7 @@ int main() {
 	char *bonusbuf = malloc(256);
 
 	while (1) {
-		write(1, "login: ", 7);
+		printf("login: ");
 		readline(userbuf + 7, 128);
 
 		struct stat sb;
@@ -24,7 +24,7 @@ int main() {
 			continue;
 		}
 
-		write(1, "password: ", 10);
+		printf("password: ");
 		readline(passbuf, 256);
 
 		char *suffix = userbuf + strlen(userbuf);
