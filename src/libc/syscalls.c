@@ -76,3 +76,7 @@ void exit(int status) {
 	syscall(SYS_exit, status);
 	__builtin_unreachable();
 }
+
+int close(int fd) {
+	return syscall(SYS_close, fd);
+}

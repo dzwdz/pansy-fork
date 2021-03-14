@@ -1,0 +1,1 @@
+long syscall(long n, ...);

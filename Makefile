@@ -5,6 +5,7 @@ CFLAGS := ${CFLAGS}
 CFLAGS += -nostdlib -static
 CFLAGS += -Wall -Wextra
 CFLAGS += -g
+CFLAGS += -Isrc/libc/
 
 QEMU   ?= qemu-system-x86_64
 
