@@ -18,6 +18,7 @@ endif
 
 # files that the final image depends on
 fs := $(patsubst src/bin/%.c,root/bin/%,$(wildcard src/bin/*.c))
+fs += root/Users
 initramfs.cpio.gz: $(fs)
 	cp root/bin/init root/init
 	find root/ | cut -sd / -f 2- | cpio -ov --format=newc -Droot/ -R root:root | gzip -9 > $@
@@ -30,6 +31,8 @@ clean:
 	rm -r root/*
 	rm initramfs.cpio.gz
 
+root/Users: $(shell find static/Users)
+	cp -r static/Users root/Users
 
 root/bin/%: src/bin/%.c root/lib/libc.a
 	@mkdir -p $(@D)

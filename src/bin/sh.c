@@ -1,3 +1,4 @@
+#include "tty.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,15 +13,6 @@
 // bad code ahead
 
 char** env;
-
-void readline(char* buf, size_t buf_size) {
-	size_t i = 0;
-	for (; i < buf_size; i++) {
-		read(STDIN_FILENO, &buf[i], 1);
-		if (buf[i] == '\n') break;
-	}
-	buf[i] = '\0';
-}
 
 char** split_args(const char* str) {
 	static

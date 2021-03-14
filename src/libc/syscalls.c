@@ -80,3 +80,7 @@ void exit(int status) {
 int close(int fd) {
 	return syscall(SYS_close, fd);
 }
+
+int stat(const char *path, struct stat *statbuf) {
+	return syscall(SYS_stat, path, statbuf);
+}
