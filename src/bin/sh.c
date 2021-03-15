@@ -9,9 +9,6 @@
 
 #define MAX_LEN 256
 
-// todo tidy this up
-// bad code ahead
-
 char** env;
 
 char** split_args(const char* str) {

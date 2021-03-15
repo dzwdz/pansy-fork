@@ -8,6 +8,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+// todo unmess the syscalls
 int64_t _syscall(int64_t number,
 				 int64_t p1,
 				 int64_t p2,

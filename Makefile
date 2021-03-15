@@ -39,6 +39,7 @@ clean:
 	rm initramfs.cpio.gz
 
 
+### copy over static files ###
 root/Users: $(shell find static/Users)
 	@cp -r static/Users root/Users
 
@@ -46,11 +47,15 @@ root/lib/modules/e1000.ko: /lib/modules/5.10.18-1-MANJARO/kernel/drivers/net/eth
 	@mkdir -p $(@D)
 	@xz -cd $< > $@
 
+
+### build all of /bin ###
 root/bin/%: src/bin/%.c root/lib/libc.a
 	@mkdir -p $(@D)
 	@${CC} ${CFLAGS} $^ -o $@
 
 
+### build the libc ###
+### every binary is statically linked against it ###
 libc_obj := $(patsubst %.c,%.o,$(wildcard src/libc/*.c))
 root/lib/libc.a: src/libc/lowlevel.o $(libc_obj)
 	@mkdir -p $(@D)

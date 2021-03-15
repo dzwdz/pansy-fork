@@ -53,14 +53,19 @@ pid_t launch(char *path, bool daemonize) {
 
 int main() {
 	puts("[init]\tcreating devices");
-	mknod("/dev/null", S_IFCHR, 0x103);
+	mknod("/dev/null", S_IFCHR, 0x103); // i was too lazy to implement makedev()
+	                                    // this means maj1 min3
+	                                    // you can find out those numbers by
+	                                    // running `ls -al /dev/null`
+
 
 	puts("[init]\tloading kernel modules");
-	load_module("/lib/modules/e1000.ko");
+	load_module("/lib/modules/e1000.ko"); // the ethernet driver
 
 	puts("[init]\tsummoning daemons");
 	launch("/bin/ethup", true);
 	launch("/bin/httpd", true);
+
 
 	puts("[init]\tlaunching login");
 	pid_t login = launch("/bin/login", false);
