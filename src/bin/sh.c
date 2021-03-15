@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -84,6 +85,18 @@ char** split_args(const char* str) {
 	return parts_start;
 }
 
+bool find_file(char* path) {
+	struct stat sb;
+	if (stat(path, &sb) == 0) return true;
+
+	if (path[0] == '/') return false;
+
+	// look in /bin
+	memmove(path + 5, path, MAX_LEN - 5);
+	memcpy(path, "/bin/", 5);
+	return stat(path, &sb) == 0;
+}
+
 int run(char** args) {
 	// some builtins
 	if (!strcmp(args[0], "exit"))
@@ -95,6 +108,11 @@ int run(char** args) {
 	}
 
 	// the command isn't a builtin, try running an executable
+	if (!find_file(args[0])) {
+		puts("file not found");
+		return 1;
+	}
+
 	if (!fork()) {
 		execve(args[0], args, env);
 		puts("pansh: execve() error");
