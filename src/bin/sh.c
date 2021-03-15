@@ -85,6 +85,8 @@ char** split_args(const char* str) {
 	return parts_start;
 }
 
+// this treats the path arg as a char[MAX_LEN], and it messes up stuff after
+// the null byte
 bool find_file(char* path) {
 	struct stat sb;
 	if (stat(path, &sb) == 0) return true;
@@ -108,15 +110,21 @@ int run(char** args) {
 	}
 
 	// the command isn't a builtin, try running an executable
-	if (!find_file(args[0])) {
+	char *path = malloc(MAX_LEN);
+	strcpy(path, args[0]);
+
+	if (!find_file(path)) {
 		puts("file not found");
+		free(path);
 		return 1;
 	}
 
 	if (!fork()) {
-		execve(args[0], args, env);
+		execve(path, args, env);
 		puts("pansh: execve() error");
 	}
+
+	free(path);
 
 	int status;
 	wait(&status);
