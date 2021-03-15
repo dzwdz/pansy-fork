@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <sys/mman.h>
 #include <sys/syscall.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -124,4 +125,12 @@ int ioctl(int fd, unsigned long req, ...) {
 
 	// musl does some more stuff here, i might be missing something?
 	return syscall(SYS_ioctl, fd, req, arg);
+}
+
+int mknod(const char *pathname, mode_t mode, dev_t dev) {
+	return syscall(SYS_mknod, pathname, mode, dev);
+}
+
+int nanosleep(const struct timespec *req, struct timespec *rem) {
+	return syscall(SYS_nanosleep, req, rem);
 }
