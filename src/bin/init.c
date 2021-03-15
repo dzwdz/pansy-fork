@@ -59,7 +59,7 @@ int main() {
 	load_module("/lib/modules/e1000.ko");
 
 	puts("[init]\tsummoning daemons");
-	launch("/bin/ethup", false);
+	launch("/bin/ethup", true);
 	launch("/bin/httpd", true);
 
 	puts("[init]\tlaunching login");
