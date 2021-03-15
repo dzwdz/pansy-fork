@@ -23,7 +23,7 @@ void load_module(const char *path) {
 	//printf("succesfully loaded %s\n", path);
 }
 
-pid_t launch(const char *path, bool daemonize) {
+pid_t launch(char *path, bool daemonize) {
 	pid_t pid = fork();
 	if (pid != 0) return pid;
 

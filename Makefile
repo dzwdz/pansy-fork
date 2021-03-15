@@ -27,7 +27,7 @@ fs += root/Users
 fs += root/lib/modules/e1000.ko
 
 initramfs.cpio.gz: $(fs)
-	cp root/bin/init root/init
+	@cp root/bin/init root/init
 	find root/ | cut -sd / -f 2- | cpio -ov --format=newc -Droot/ -R root:root | gzip -9 > $@
 
 boot: initramfs.cpio.gz
@@ -40,7 +40,7 @@ clean:
 
 
 root/Users: $(shell find static/Users)
-	cp -r static/Users root/Users
+	@cp -r static/Users root/Users
 
 root/lib/modules/e1000.ko: /lib/modules/5.10.18-1-MANJARO/kernel/drivers/net/ethernet/intel/e1000/e1000.ko.xz
 	@mkdir -p $(@D)
@@ -48,7 +48,7 @@ root/lib/modules/e1000.ko: /lib/modules/5.10.18-1-MANJARO/kernel/drivers/net/eth
 
 root/bin/%: src/bin/%.c root/lib/libc.a
 	@mkdir -p $(@D)
-	${CC} ${CFLAGS} $^ -o $@
+	@${CC} ${CFLAGS} $^ -o $@
 
 
 libc_obj := $(patsubst %.c,%.o,$(wildcard src/libc/*.c))
@@ -57,8 +57,8 @@ root/lib/libc.a: src/libc/lowlevel.o $(libc_obj)
 	ar rcs $@ $^
 
 src/libc/lowlevel.o: src/libc/lowlevel.s
-	${CC} ${CFLAGS} -c $^ -o $@
+	@${CC} ${CFLAGS} -c $^ -o $@
 
 src/libc/%.o: src/libc/%.c
-	${CC} ${CFLAGS} -c $^ -o $@
+	@${CC} ${CFLAGS} -c $^ -o $@
 

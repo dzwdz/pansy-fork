@@ -1,6 +1,8 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <sys/mman.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/wait.h>

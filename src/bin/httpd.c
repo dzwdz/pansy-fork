@@ -37,7 +37,7 @@ int main() {
 
 		char *msg = "THIS WORKS\n";
 
-		int bytes_sent = send(client_fd, msg, strlen(msg), 0);
+		/* int bytes_sent = */ send(client_fd, msg, strlen(msg), 0);
 
 		close(client_fd);
 	}
