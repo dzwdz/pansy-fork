@@ -137,3 +137,13 @@ int mknod(const char *pathname, mode_t mode, dev_t dev) {
 int nanosleep(const struct timespec *req, struct timespec *rem) {
 	return syscall(SYS_nanosleep, req, rem);
 }
+
+
+int mount(const char *source, const char *target, const char *fstype,
+          unsigned long flags, const void *data) {
+	return syscall(SYS_mount, source, target, fstype, flags, data);
+}
+
+int mkdir(const char *pathname, mode_t mode) {
+	return syscall(SYS_mkdir, pathname, mode);
+}

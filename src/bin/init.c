@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/mount.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <syscall.h>
@@ -52,12 +53,14 @@ pid_t launch(char *path, bool daemonize) {
 }
 
 int main() {
-	puts("[init]\tcreating devices");
+	puts("[init]\tcreating / mounting devices");
 	mknod("/dev/null", S_IFCHR, 0x103); // i was too lazy to implement makedev()
 	                                    // this means maj1 min3
 	                                    // you can find out those numbers by
 	                                    // running `ls -al /dev/null`
-
+	
+	mkdir("/proc", 272);
+	mount("proc", "/proc", "proc", 0, 0);
 
 	puts("[init]\tloading kernel modules");
 	load_module("/lib/modules/e1000.ko"); // the ethernet driver
