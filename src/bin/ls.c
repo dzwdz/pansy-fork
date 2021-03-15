@@ -20,7 +20,12 @@ int main(int argc, char *argv[]) {
 		if (!dp) break;
 
 		if (dp->d_name[0] == '.') continue;
-		puts(dp->d_name);
+
+		char d_type = ((char*)dp)[dp->d_reclen-1];
+		if (d_type == DT_DIR)
+			printf("%s/\n", dp->d_name);
+		else
+			printf("%s\n", dp->d_name);
 	}
 
 	closedir(dirp);

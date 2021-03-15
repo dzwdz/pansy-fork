@@ -84,3 +84,44 @@ int close(int fd) {
 int stat(const char *path, struct stat *statbuf) {
 	return syscall(SYS_stat, path, statbuf);
 }
+
+int dup2(int oldfd, int newfd) {
+	return syscall(SYS_dup2, oldfd, newfd);
+}
+
+
+int socket(int domain, int type, int protocol) {
+	return syscall(SYS_socket, domain, type, protocol);
+}
+
+int bind(int socket, const struct sockaddr *address, socklen_t addr_len) {
+	return syscall(SYS_bind, socket, address, addr_len);
+}
+
+int listen(int socket, int backlog) {
+	return syscall(SYS_listen, socket, backlog);
+}
+
+int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
+	return syscall(SYS_accept, sockfd, addr, addrlen);
+}
+
+ssize_t sendto(int socket, const void *buffer, size_t len, int flags,
+             const struct sockaddr *dest_addr, socklen_t addrlen) {
+	return syscall(SYS_sendto, socket, buffer, len, flags, dest_addr, addrlen);
+}
+
+ssize_t send(int socket, const void *buffer, size_t len, int flags) {
+	return sendto(socket, buffer, len, flags, 0, 0);
+}
+
+
+int ioctl(int fd, unsigned long req, ...) {
+	va_list ap;
+	va_start(ap, req);
+	void *arg = va_arg(ap, void *);
+	va_end(ap);
+
+	// musl does some more stuff here, i might be missing something?
+	return syscall(SYS_ioctl, fd, req, arg);
+}
