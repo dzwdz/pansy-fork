@@ -31,27 +31,6 @@ char *strcpy(char *dest, const char *src) {
 	return og;
 }
 
-// note: no overlap check
-void *memcpy(void *dest, const void *src, size_t n) {
-	char *d2 = dest;
-	const char *s2 = src;
-	while (n--) {
-		*d2++ = *s2++;
-	}
-	return dest;
-}
-
-void *memmove(void *dest, const void *src, size_t n) {
-	char *tmp = malloc(n);
-	if (tmp == NULL) return NULL;
-
-	memcpy(tmp,  src, n);
-	memcpy(dest, tmp, n);
-
-	free(tmp);
-	return dest;
-}
-
 int printf(const char *fmt, ...) {
 	const char *sub = fmt;
 	int total = 0;
