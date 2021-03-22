@@ -7,12 +7,12 @@ _start:
 	     8 | argv
 	argc+8 | envp
 	
-	i'm just moving everything a place that main() knows about */
+	i'm just moving everything to a place that the main() wrapper knows about */
 
-	mov   (%rsp), %rdi
-	lea  8(%rsp), %rsi
-	lea 16(%rsp,%rdi,8), %rdx
-	call main
+	mov  (%rsp), %rdi
+	lea 8(%rsp), %rsi
+	mov   $main, %rdx
+	call __libc_start_main
 	
 	mov %rax, %rdi	/* return value of main() */
 	mov $60, %rax	/* SYS_exit */

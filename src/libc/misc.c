@@ -4,6 +4,13 @@
 #include <string.h>
 #include <unistd.h>
 
+void __libc_start_main(int argc, char** argv,
+		int (*main)(int, char**, char**)) {
+	char **envp = argv+argc+1;
+
+	exit(main(argc, argv, envp));
+}
+
 int puts(const char *s) {
 	int b = write(1, s, strlen(s));
 	if (b < 0) return b;
