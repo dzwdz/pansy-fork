@@ -25,3 +25,12 @@ so i wasn't able to launch other processes from init, even itself
 after a lot of tinkering i tried to just get busybox and use its shell as an
 init, which was useful during debugging
 haha my fucking syscall implementation was wrong fml
+
+	brk() is slightly misleading
+i spent 2 hours debugging the shell command parser just to realize that my sbrk
+implementation was bugged. the issue was, that, according to the man pages:
+- brk() sets the program break, but it doesn't return any info about it
+- sbrk() moves the break, and it returns the *previous* break
+linux only has a brk() syscall, so i've assumed that it's a blend of both - that
+is, it sets the break to a fixed value, and returns the previous one. turns out
+that it returns the new break

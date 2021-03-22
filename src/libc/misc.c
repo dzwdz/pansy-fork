@@ -58,6 +58,24 @@ int printf(const char *fmt, ...) {
 				const char *s = va_arg(argp, char*); 
 				write(1, s, strlen(s));
 				break;}
+			case 'c': {
+				char c = va_arg(argp, int);
+				write(1, &c, 1);
+				break;}
+			case 'x': {
+				unsigned int num = va_arg(argp, unsigned int);
+				int i = 0;
+				while (num >> i) i += 4;
+				
+				write(1, "0x", 2);
+				while (i > 0) {
+					i -= 4;
+					char c = '0' + ((num >> i) & 0xf);
+					if (c > '9') c += 'A' - '9' - 1;
+					write(1, &c, 1);
+				}
+
+				break;}
 			}
 
 			sub = fmt;

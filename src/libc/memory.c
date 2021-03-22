@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stddef.h>
+//#include <stdio.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 
@@ -11,7 +12,9 @@ void *mmap(void *addr, size_t len, int prot, int flags,
 
 void *sbrk(intptr_t increment) {
 	void* brk = (void*) syscall(SYS_brk, 0);
-	return (void*) syscall(SYS_brk, brk + increment);
+	void* ret = (void*) syscall(SYS_brk, brk + increment);
+	if (brk + increment != ret) return (void*)-1;
+	return brk;
 }
 
 
@@ -25,9 +28,12 @@ struct block_s {
 };
 
 void* malloc(size_t size) {
+//	printf("allocating %x...\n", (unsigned int)size);
 	void* ptr = sbrk(size);
 	if (ptr == (void*)-1)
 		ptr = NULL;
+//	printf("allocated %x\n", (unsigned int)ptr);
+//	printf("to        %x\n", (unsigned int)ptr+size);
 	return ptr;
 }
 

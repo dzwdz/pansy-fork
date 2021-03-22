@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
 	DIR *dirp = opendir(path);
 	
 	if (!dirp) {
-		puts("can't open dir");
+		printf("can't open dir: %s\n", path);
 		return 1;
 	}
 
