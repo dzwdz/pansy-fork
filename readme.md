@@ -6,7 +6,10 @@ mixes spaces and 4-wide tabs, so it looks absolutely awful on github. sorry
 
 running / building
 ------------------
-The Makefile has two hardcoded paths - the kernel and the e1000 module. Fix those and run `make boot` to boot qemu.
+you need to manually supply two files - deps/vmlinuz and deps/e1000.ko
+* deps/vmlinuz - the kernel, you'll probably find one in `/boot`
+* deps/e1000.ko - the ethernet driver, look for it in `/lib/modules/*/kernel/drivers/net/ethernet/intel/e1000/`
+
 
 resources
 ---------

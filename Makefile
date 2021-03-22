@@ -7,7 +7,7 @@ CFLAGS += -Wall -Wextra
 CFLAGS += -g
 CFLAGS += -Isrc/libc/
 
-KERNEL ?= /boot/vmlinuz-5.10-x86_64
+KERNEL ?= deps/vmlinuz
 KFLAGS := ${KFLAGS},
 KFLAGS += console=ttyS0, root=/dev/ram0, 
 ifdef VERBOSE
@@ -43,9 +43,9 @@ clean:
 root/Users: $(shell find static/Users)
 	@cp -r static/Users root/Users
 
-root/lib/modules/e1000.ko: /lib/modules/5.10.18-1-MANJARO/kernel/drivers/net/ethernet/intel/e1000/e1000.ko.xz
+root/lib/modules/e1000.ko: deps/e1000.ko
 	@mkdir -p $(@D)
-	@xz -cd $< > $@
+	@cp $< $@
 
 
 ### build all of /bin ###

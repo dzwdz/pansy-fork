@@ -2,3 +2,6 @@
 initramfs*
 *.o
 *.a
+
+deps/*
+!deps/.keep
