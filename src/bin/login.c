@@ -63,7 +63,10 @@ int main() {
 			}
 		}
 
-		// TODO: change uid/gid
+		// change the uid
+		setreuid(sb.st_uid, sb.st_uid);
+		setregid(sb.st_gid, sb.st_gid);
+
 		// exec shell
 		char *const sh[] = {"/bin/sh", NULL};
 		execve(sh[0], sh, NULL);

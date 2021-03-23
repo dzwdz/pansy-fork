@@ -46,6 +46,10 @@ int stat(const char *path, struct stat *statbuf) {
 	return syscall(SYS_stat, path, statbuf);
 }
 
+int chown(const char *pathname, uid_t owner, gid_t group) {
+	return syscall(SYS_chown, pathname, owner, group);
+}
+
 
 /***  DIRECTORY STUFF  ***/
 DIR *opendir(const char *name) {

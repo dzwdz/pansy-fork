@@ -69,6 +69,17 @@ int main() {
 	launch("/bin/ethup", true);
 	launch("/bin/httpd", true);
 
+	{ // temporary: add a test user acc
+		mkdir("/Users/kuba", 0700);
+		chown("/Users/kuba", 0x420, 0x420);
+
+		setreuid(0, 0x420);
+		int fd = open("/Users/kuba/password", O_CREAT | O_WRONLY, 0300);
+		int bytes_written = write(fd, "dupa.8", 7);
+		close(fd);
+		setreuid(0, 0);
+	}
+
 
 	puts("[init]\tlaunching login");
 	pid_t login = launch("/bin/login", false);
