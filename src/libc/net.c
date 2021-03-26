@@ -29,6 +29,15 @@ ssize_t send(int socket, const void *buffer, size_t len, int flags) {
 	return sendto(socket, buffer, len, flags, 0, 0);
 }
 
+ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
+                 struct sockaddr *src_addr, socklen_t *addrlen) {
+	return syscall(SYS_recvfrom, sockfd, buf, len, flags, src_addr, addrlen);
+}
+
+ssize_t recv(int sockfd, void *buf, size_t len, int flags) {
+	return recvfrom(sockfd, buf, len, flags, 0, 0);
+}
+
 
 /*** MISC ***/
 uint16_t htons(uint16_t hosts) {

@@ -17,7 +17,7 @@ endif
 QEMU   ?= qemu-system-x86_64
 QFLAGS := ${QFLAGS}
 QFLAGS += -kernel $(KERNEL) -append "${KFLAGS}" -m 1G -nographic
-QFLAGS += -device e1000,netdev=net0 -netdev user,id=net0,hostfwd=tcp::1312-:1312
+QFLAGS += -device e1000,netdev=net0 -netdev user,id=net0,hostfwd=tcp::1312-:80
 
 
 
@@ -25,6 +25,8 @@ QFLAGS += -device e1000,netdev=net0 -netdev user,id=net0,hostfwd=tcp::1312-:1312
 fs := $(patsubst src/bin/%.c,root/bin/%,$(wildcard src/bin/*.c))
 fs += root/Users
 fs += root/lib/modules/e1000.ko
+fs += root/var/www/html/index.html
+fs += root/var/www/html/favicon.png
 
 initramfs.cpio.gz: $(fs)
 	@cp root/bin/init root/init
@@ -46,6 +48,10 @@ root/Users: $(shell find static/Users)
 root/lib/modules/e1000.ko: deps/e1000.ko
 	@mkdir -p $(@D)
 	@cp $< $@
+
+root/%: static/%
+	@mkdir -p $(@D)
+	@cp -r $< $@
 
 
 ### build all of /bin ###
