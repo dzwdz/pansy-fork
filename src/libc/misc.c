@@ -17,27 +17,6 @@ int puts(const char *s) {
 	return b + write(1, "\n", 1);
 }
 
-size_t strlen(const char *s) {
-	size_t c = 0;
-	while (*s++) c++;
-	return c;
-}
-
-int strcmp(const char *s1, const char *s2) {
-	do {
-		if (*s1 != *s2++)
-			return s1 - s2;
-	} while (*s1++);
-
-	return 0;
-}
-
-char *strcpy(char *dest, const char *src) {
-	char *og = dest;
-	while ((*dest++ = *src++));
-	return og;
-}
-
 int printf(const char *fmt, ...) {
 	const char *sub = fmt;
 	int total = 0;
