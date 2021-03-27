@@ -68,3 +68,6 @@ int dup2(int oldfd, int newfd) {
 	return syscall(SYS_dup2, oldfd, newfd);
 }
 
+off_t lseek(int fd, off_t offset, int whence) {
+	return syscall(SYS_lseek, fd, offset, whence);
+}
