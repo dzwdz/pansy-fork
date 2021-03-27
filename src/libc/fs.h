@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #pragma once
 
 // copied from the man getdents(2)
@@ -37,3 +38,5 @@ typedef struct {
 DIR *opendir(const char *name);
 struct dirent *readdir(DIR* dir);
 int closedir(DIR* dir);
+
+bool is_path_safe(const char *c);

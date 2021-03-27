@@ -1,3 +1,4 @@
+#include "fs.h"
 #include "tty.h"
 #include <fcntl.h>
 #include <stdio.h>
@@ -17,6 +18,11 @@ int main() {
 	while (1) {
 		printf("login: ");
 		readline(userbuf + 7, 128);
+
+		if (!is_path_safe(userbuf)) {
+			puts("illegal username");
+			continue;
+		}
 
 		struct stat sb;
 		if (stat(userbuf, &sb)) {

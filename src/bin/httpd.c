@@ -1,4 +1,5 @@
 #include "macros.h"
+#include <fcntl.h>
 #include <netdb.h>
 #include <stdbool.h>
 #include <stdio.h>

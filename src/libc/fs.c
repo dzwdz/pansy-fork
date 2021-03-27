@@ -1,9 +1,10 @@
 #include "fs.h"
 #include <fcntl.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <sys/syscall.h>
+#include <unistd.h>
 
 /***  SYSCALLS  ***/
 char *getcwd(char *buf, size_t size) {
@@ -93,4 +94,13 @@ int closedir(DIR* dir) {
 	close(dir->fd);
 	free(dir);
 	return 0;
+}
+
+/* fancy custom stuff */
+bool is_path_safe(const char *c) {
+	while (*c) {
+		if (c[0] == '.' && c[1] == '.') return false; // too strict, idc
+		c++;
+	}
+	return true;
 }

@@ -32,21 +32,25 @@ pid_t launch(char *path, bool daemonize) {
 	if (daemonize) {
 		// redirect std* to /dev/null
 		int fd = open("/dev/null", O_RDWR);
-		if (fd < 0) exit(1); // todo this really needs proper error handling
-		if (dup2(fd, 0) < 0
-		 || dup2(fd, 1) < 0
-		 || dup2(fd, 2) < 0) exit(1);
+		if (fd < 0) {
+			puts("[init] couldn't open /dev/null");
+			// let's just launch the service anyways
+		} else {
+			if (dup2(fd, 0) < 0
+			 || dup2(fd, 1) < 0
+			 || dup2(fd, 2) < 0) exit(1);
 
-		if (fd > 2) close(fd);
+			if (fd > 2) close(fd);
+		}
 	}
 
 	char* const args[] = {path, NULL};
 	int r = execve(path, args, NULL);
 
-	// couldn't launch, todo print a proper log message
+	// this won't get printed anywhere, but hopefully the busy loop will make me
+	// realize something is wrong
 	if (r < 0) r = -r;
-	while (r-- > 0) puts("+");
-	printf("oh no, %s\n", path);
+	printf("[init]\tcouldn't execute \"%s\", errno %x\n", path, r);
 	while (1) {}
 
 	exit(1);
@@ -75,7 +79,7 @@ int main() {
 
 		setreuid(0, 0x420);
 		int fd = open("/Users/kuba/password", O_CREAT | O_WRONLY, 0300);
-		int bytes_written = write(fd, "dupa.8", 7);
+		write(fd, "dupa.8", 7);
 		close(fd);
 		setreuid(0, 0);
 	}

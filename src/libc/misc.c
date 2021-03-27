@@ -64,8 +64,9 @@ int printf(const char *fmt, ...) {
 				break;}
 			case 'x': {
 				unsigned int num = va_arg(argp, unsigned int);
+
 				int i = 0;
-				while (num >> i) i += 4;
+				while (num >> i && i < (sizeof(int) * 8)) i += 4;
 				if (i == 0) i = 4;
 				
 				write(1, "0x", 2);
