@@ -30,7 +30,7 @@ fs += root/var/www/html/favicon.png
 
 initramfs.cpio.gz: $(fs)
 	@cp root/bin/init root/init
-	find root/ | cut -sd / -f 2- | cpio -ov --format=newc -Droot/ -R root:root | gzip -9 > $@
+	find root/ | cut -sd / -f 2- | cpio -o --format=newc -Droot/ -R root:root | gzip -9 > $@
 
 boot: initramfs.cpio.gz
 	$(QEMU) ${QFLAGS} -initrd $<
