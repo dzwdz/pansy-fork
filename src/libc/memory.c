@@ -29,16 +29,25 @@ struct block_s {
 
 void* malloc(size_t size) {
 //	printf("allocating %x...\n", (unsigned int)size);
-	void* ptr = sbrk(size);
+	void* ptr = sbrk(sizeof(block_s) + size);
 	if (ptr == (void*)-1)
-		ptr = NULL;
+		return NULL;
+
+	block_s *b = (block_s*)ptr;
+	b->size = size;
+	b->free = false;
+	b->next = NULL; // we don't deal with these yet for free()
 //	printf("allocated %x\n", (unsigned int)ptr);
 //	printf("to        %x\n", (unsigned int)ptr+size);
-	return ptr;
+	return ptr + sizeof(block_s);
 }
 
 void free(void* ptr) {
-	ptr++; // stub
+	if (ptr == NULL)
+		return;
+
+	block_s *b = (block_s*)(ptr - sizeof(block_s));
+	b->free = true;
 }
 
 
