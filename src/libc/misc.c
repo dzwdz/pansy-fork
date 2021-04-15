@@ -57,6 +57,29 @@ int printf(const char *fmt, ...) {
 				}
 
 				break;}
+			case 'd': {
+					char c;
+					int n = va_arg(argp, int);
+
+					// special case for when the number is zero
+					if (n == 0) {
+						c = '0';
+						write(1, &c, 1);
+						break;
+					}
+					else if (n < 0) {
+						c = '-';
+						write(1, &c, 1);
+						n = -n;
+					}
+
+					while (n != 0) {
+						c = '0' + n % 10;
+						write(1, &c, 1);
+						n /= 10;
+					}
+
+					break;}
 			}
 
 			sub = fmt;
