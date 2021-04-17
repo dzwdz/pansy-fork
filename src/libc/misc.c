@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <unistd.h>
 
 void __libc_start_main(int argc, char** argv,
@@ -58,28 +59,41 @@ int printf(const char *fmt, ...) {
 
 				break;}
 			case 'd': {
-					char c;
-					int n = va_arg(argp, int);
+				char c;
+				int n = va_arg(argp, int);
 
-					// special case for when the number is zero
-					if (n == 0) {
-						c = '0';
-						write(1, &c, 1);
-						break;
-					}
-					else if (n < 0) {
-						c = '-';
-						write(1, &c, 1);
-						n = -n;
-					}
+				// special case for when the number is zero
+				if (n == 0) {
+					c = '0';
+					write(1, &c, 1);
+					break;
+				}
+				else if (n < 0) {
+					c = '-';
+					write(1, &c, 1);
+					n = -n;
+				}
 
-					while (n != 0) {
-						c = '0' + n % 10;
-						write(1, &c, 1);
-						n /= 10;
-					}
+				// write to string
+				char to_print[10] = {0};
+				int i = 0;
+				while (n != 0) {
+					to_print[i++] = (n % 10) + '0';
+					n /= 10;
+				}
 
-					break;}
+				// that previous string is reversed, we fix it here
+				char fixed[10];
+				{
+					int j = 0;
+					int k = strlen(to_print);
+					for (; k > 0; k--, j++) {
+						fixed[j] = to_print[k - 1];
+					}
+				}
+				printf("%s", fixed);
+
+				break;}
 			}
 
 			sub = fmt;
@@ -92,4 +106,24 @@ int printf(const char *fmt, ...) {
 	}
 
 	va_end(argp);
+}
+
+bool is_number(const char *str) {
+	if (!((*str > '0' && *str < '9') || *str == '-'))
+		return false;
+	for (size_t i = 1; i < strlen(str); i++) {
+		if (!(str[i] > '0' && str[i] < '9'))
+			return false;
+	}
+	return true;
+}
+
+int atoi(const char *str) {
+	if (!is_number(str))
+		return 0;
+	int n = 0;
+	for (int i = 0; str[i] != '\0'; ++i) {
+		n = n * 10 + str[i] - '0';
+	}
+	return n;
 }
