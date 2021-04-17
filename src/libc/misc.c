@@ -83,15 +83,10 @@ int printf(const char *fmt, ...) {
 				}
 
 				// that previous string is reversed, we fix it here
-				char fixed[10];
-				{
-					int j = 0;
-					int k = strlen(to_print);
-					for (; k > 0; k--, j++) {
-						fixed[j] = to_print[k - 1];
-					}
+				for (int k = strlen(to_print); k > 0; k--) {
+					c = to_print[k - 1];
+					write(1, &c, 1);
 				}
-				printf("%s", fixed);
 
 				break;}
 			}
@@ -122,8 +117,14 @@ int atoi(const char *str) {
 	if (!is_number(str))
 		return 0;
 	int n = 0;
-	for (int i = 0; str[i] != '\0'; ++i) {
+	int sign = 1;
+	int i = 0;
+	if (str[i] == '-') {
+		sign = -1;
+		i++;
+	}
+	for (; str[i] != '\0'; i++) {
 		n = n * 10 + str[i] - '0';
 	}
-	return n;
+	return n * sign;
 }
