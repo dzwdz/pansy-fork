@@ -12,6 +12,10 @@ void __libc_start_main(int argc, char** argv,
 	exit(main(argc, argv, envp));
 }
 
+int putchar(int c) {
+	return write(1, &c, 1);
+}
+
 int puts(const char *s) {
 	int b = write(1, s, strlen(s));
 	if (b < 0) return b;
