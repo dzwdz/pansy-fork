@@ -195,8 +195,25 @@ worddef(colon) {
 		buf = strcat(buf, *tokens);
 	}
 
-	strcpy(tmp.forth_code, buf);
+	word *traverse_word = dict;
+	while (traverse_word != NULL) {
+		if (strcmp(traverse_word->name, tmp.name) == 0) {
+			/* word already exists, just modify its code and return */
+			traverse_word->c_code = false;
+			traverse_word->c_func = NULL;
+			if (traverse_word->forth_code == NULL)
+				traverse_word->forth_code = malloc(MAX_LEN);
+			strcpy(traverse_word->forth_code, buf);
 
+			return tokens;
+		}
+		else {
+			traverse_word = traverse_word->next;
+		}
+	}
+
+	/* word doesn't exist, add a new */
+	strcpy(tmp.forth_code, buf);
 	add_word(dict, tmp);
 
 	return tokens;
@@ -205,7 +222,7 @@ worddef(colon) {
 worddef(dump_dictionary) {
 	word *traverse_word = dict;
 	while (1) {
-		if (traverse_word->next == NULL) {
+		if (traverse_word == NULL) {
 			return tokens;
 		} else {
 			puts(traverse_word->name);
