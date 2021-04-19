@@ -86,7 +86,7 @@ int printf(const char *fmt, ...) {
 					n /= 10;
 				}
 
-				// that previous string is reversed, we fix it here
+				// that previous string is reversed, so we print it backwards
 				for (int k = strlen(to_print); k > 0; k--) {
 					c = to_print[k - 1];
 					write(1, &c, 1);
@@ -109,6 +109,8 @@ int printf(const char *fmt, ...) {
 
 bool is_number(const char *str) {
 	if (!((*str > '0' && *str < '9') || *str == '-'))
+		return false;
+	if ((*str == '-') && (strlen(str) == 1))
 		return false;
 	for (size_t i = 1; i < strlen(str); i++) {
 		if (!(str[i] > '0' && str[i] < '9'))
