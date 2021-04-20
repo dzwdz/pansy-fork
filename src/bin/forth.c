@@ -167,6 +167,24 @@ worddef(multiply) {
 	return tokens;
 }
 
+worddef(morethan) {
+	push(pop() < pop() ? -1 : 0);
+
+	return tokens;
+}
+
+worddef(lessthan) {
+	push(pop() > pop() ? -1 : 0);
+
+	return tokens;
+}
+
+worddef(equal) {
+	push(pop() == pop() ? -1 : 0);
+
+	return tokens;
+}
+
 worddef(dup) {
 	int x = pop();
 	push(x);
@@ -274,6 +292,16 @@ worddef(show_stack) {
 	return tokens;
 }
 
+worddef(semicolon) {
+	return tokens;
+}
+
+worddef(bye) {
+	return tokens;
+}
+
+/* end of word declarations */
+
 word *init_c_words() {
 	word *w = malloc(sizeof(word));
 	strcpy(w->name, ".");
@@ -283,10 +311,13 @@ word *init_c_words() {
 	w->next = NULL;
 
 	/*** words defined in C ***/
-	/* arithmetic */
+	/* math */
 	add_word(w, (word){"+", true, &add, NULL, NULL});
 	add_word(w, (word){"-", true, &subtract, NULL, NULL}); // todo: can't use - as identifier
 	add_word(w, (word){"*", true, &multiply, NULL, NULL});
+	add_word(w, (word){">", true, &morethan, NULL, NULL});
+	add_word(w, (word){"<", true, &lessthan, NULL, NULL});
+	add_word(w, (word){"=", true, &equal, NULL, NULL});
 	/* stack manipulation and information */
 	add_word(w, (word){".s", true, &show_stack, NULL, NULL});
 	add_word(w, (word){"dup", true, &dup, NULL, NULL});
@@ -295,6 +326,8 @@ word *init_c_words() {
 	add_word(w, (word){"emit", true, &emit, NULL, NULL});
 	/* meta */
 	add_word(w, (word){":", true, &colon, NULL, NULL});
+	add_word(w, (word){";", true, &semicolon, NULL, NULL});
+	add_word(w, (word){"bye", true, &bye, NULL, NULL});
 	add_word(w, (word){"dump", true, &dump_dictionary, NULL, NULL});
 
 	return w;
@@ -320,9 +353,6 @@ char *words_exist(char **args, word *dictionary) {
 			found_word = true;
 		} else if (strcmp(prev_token, ":") == 0) {
 			/* this token is a new word, of course it doesn't exist yet */
-			found_word = true;
-		} else if (strcmp(*args, ";") == 0) {
-			/* special case, word definition terminator */
 			found_word = true;
 		} else {
 			word *traverse_word = dictionary;
@@ -353,6 +383,8 @@ int eval(char **args, word *dictionary) {
 	while (*args) {
 		if (is_number(*args)) {
 			push(atoi(*args));
+		} else if (!strcmp("bye", *args)) {
+			return 2;
 		} else {
 			word *traverse_word = dictionary;
 			while (traverse_word != NULL) {
@@ -383,6 +415,11 @@ void load_words(char words[][MAX_LEN], word *dictionary) {
 	}
 }
 
+void cleanup(char **args, word *dictionary) {
+	free(args);
+	free_dictionary(dictionary);
+}
+
 int main(int argc __attribute__((unused)),
 		 char *argv[] __attribute__((unused))) {
 	word *dictionary = init_c_words();
@@ -395,6 +432,7 @@ int main(int argc __attribute__((unused)),
 
 	load_words(startup_code, dictionary);
 
+	/* header */
 	puts("pansy linux forth");
 	puts("pre-alpha");
 
@@ -409,15 +447,18 @@ int main(int argc __attribute__((unused)),
 		int code = eval(args, dictionary);
 
 		switch (code) {
-			/* disastrous error */
-		case -1:
-			free(args);
-			free_dictionary(dictionary);
-			return code;
-			break;
 			/* successful execution */
 		case 0:
 			printf("ok\n");
+			break;
+			/* 'bye' word encountered */
+		case 2:
+			puts("see you later!");
+			/* fallthrough */
+			/* disastrous error */
+		case -1:
+			cleanup(args, dictionary);
+			return code == 2 ? 0 : code;
 			break;
 			/* other error, don't show 'ok' */
 		default:
