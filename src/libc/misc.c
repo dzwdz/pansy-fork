@@ -112,8 +112,8 @@ bool is_number(const char *str) {
 		return false;
 	if ((*str == '-') && (strlen(str) == 1))
 		return false;
-	for (size_t i = 1; i < strlen(str); i++) {
-		if (!(str[i] > '0' && str[i] < '9'))
+	for (size_t i = *str == '-' ? 1 : 0; i < strlen(str); i++) {
+		if (!(str[i] >= '0' && str[i] <= '9'))
 			return false;
 	}
 	return true;
