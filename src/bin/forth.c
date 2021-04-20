@@ -219,6 +219,26 @@ worddef(colon) {
 	return tokens;
 }
 
+worddef(print) {
+	char buf[MAX_LEN];
+	char *outptr = buf;
+	tokens++;
+	strcpy(outptr, *tokens++);
+
+	while (1) {
+		outptr = strcat(outptr, " ");
+		outptr = strcat(outptr, *tokens);
+		if ((*tokens)[strlen(*tokens) - 1] == '\"')
+			break;
+		tokens++;
+	}
+
+	buf[strlen(buf) - 1] = '\0';
+	puts(buf);
+
+	return tokens;
+}
+
 worddef(dump_dictionary) {
 	word *traverse_word = dict;
 	while (1) {
@@ -257,6 +277,7 @@ word *init_dictionary() {
 	add_word(w, (word){"*", true, &multiply, NULL, NULL});
 	add_word(w, (word){".s", true, &show_stack, NULL, NULL});
 	add_word(w, (word){"dup", true, &dup, NULL, NULL});
+	add_word(w, (word){".\"", true, &print, NULL, NULL});
 	add_word(w, (word){":", true, &colon, NULL, NULL});
 	add_word(w, (word){"dump", true, &dump_dictionary, NULL, NULL});
 
