@@ -225,6 +225,10 @@ worddef(print) {
 	tokens++;
 	strcpy(outptr, *tokens++);
 
+	if (*tokens == NULL) {
+		goto print_copy_done;
+	}
+
 	while (1) {
 		outptr = strcat(outptr, " ");
 		outptr = strcat(outptr, *tokens);
@@ -233,8 +237,15 @@ worddef(print) {
 		tokens++;
 	}
 
+print_copy_done:
 	buf[strlen(buf) - 1] = '\0';
-	puts(buf);
+	printf("%s ", buf);
+
+	return tokens;
+}
+
+worddef(emit) {
+	putchar(pop());
 
 	return tokens;
 }
@@ -263,7 +274,7 @@ worddef(show_stack) {
 	return tokens;
 }
 
-word *init_dictionary() {
+word *init_c_words() {
 	word *w = malloc(sizeof(word));
 	strcpy(w->name, ".");
 	w->c_code = true;
@@ -271,18 +282,20 @@ word *init_dictionary() {
 	w->forth_code = NULL;
 	w->next = NULL;
 
-	/* words defined in C */
+	/*** words defined in C ***/
+	/* arithmetic */
 	add_word(w, (word){"+", true, &add, NULL, NULL});
 	add_word(w, (word){"-", true, &subtract, NULL, NULL}); // todo: can't use - as identifier
 	add_word(w, (word){"*", true, &multiply, NULL, NULL});
+	/* stack manipulation and information */
 	add_word(w, (word){".s", true, &show_stack, NULL, NULL});
 	add_word(w, (word){"dup", true, &dup, NULL, NULL});
+	/* i/o */
 	add_word(w, (word){".\"", true, &print, NULL, NULL});
+	add_word(w, (word){"emit", true, &emit, NULL, NULL});
+	/* meta */
 	add_word(w, (word){":", true, &colon, NULL, NULL});
 	add_word(w, (word){"dump", true, &dump_dictionary, NULL, NULL});
-
-	/* words defined in Forth */
-	word tmp = {"", false, NULL, NULL, NULL}; // template word used for defining forth words
 
 	return w;
 }
@@ -299,13 +312,49 @@ void print_words(word *w) {
 #endif /* DEBUG */
 
 /* central functions */
+char *words_exist(char **args, word *dictionary) {
+	char prev_token[MAX_LEN];
+	while (*args) {
+		bool found_word = false;
+		if (is_number(*args)) {
+			found_word = true;
+		} else if (strcmp(prev_token, ":") == 0) {
+			/* this token is a new word, of course it doesn't exist yet */
+			found_word = true;
+		} else if (strcmp(*args, ";") == 0) {
+			/* special case, word definition terminator */
+			found_word = true;
+		} else {
+			word *traverse_word = dictionary;
+			while (traverse_word != NULL) {
+				if (strcmp(traverse_word->name, *args) == 0) {
+					found_word = true;
+					break;
+				} else {
+					traverse_word = traverse_word->next;
+				}
+			}
+		}
+		if (!found_word)
+			return *args;
+		strcpy(prev_token, *args);
+		args++;
+	}
+	return NULL;
+}
+
 int eval(char **args, word *dictionary) {
+	char *nonexistent = words_exist(args, dictionary);
+	if (nonexistent != NULL) {
+		printf("word not found in dictionary: %s\n", nonexistent);
+		return 1;
+	}
+
 	while (*args) {
 		if (is_number(*args)) {
 			push(atoi(*args));
 		} else {
 			word *traverse_word = dictionary;
-			bool found_word = false;
 			while (traverse_word != NULL) {
 				if (strcmp(traverse_word->name, *args) == 0) {
 					if (traverse_word->c_code) {
@@ -314,17 +363,11 @@ int eval(char **args, word *dictionary) {
 						char **fargs = split_args(traverse_word->forth_code);
 						eval(fargs, dictionary);
 						free(fargs);
-					}
-					found_word = true;
+ 					}
 					break;
 				} else {
 					traverse_word = traverse_word->next;
 				}
-			}
-
-			if (!found_word) {
-				puts("word not found in dictionary!");
-				return 1;
 			}
 		}
 		args++;
@@ -332,26 +375,55 @@ int eval(char **args, word *dictionary) {
 	return 0;
 }
 
+void load_words(char words[][MAX_LEN], word *dictionary) {
+	for (size_t i = 0; strcmp(words[i], "END") != 0; i++) {
+		char **args = split_args(words[i]);
+		eval(args, dictionary);
+		free(args);
+	}
+}
+
 int main(int argc __attribute__((unused)),
 		 char *argv[] __attribute__((unused))) {
-	char buf[MAX_LEN];
-	word *dictionary = init_dictionary();
+	word *dictionary = init_c_words();
+
+	char startup_code[][MAX_LEN] = {
+		": cr  10 emit ;",
+		": spaces  32 emit ;",
+		"END"
+	};
+
+	load_words(startup_code, dictionary);
 
 	puts("pansy linux forth");
 	puts("pre-alpha");
 
+	char buf[MAX_LEN];
 	while (1) {
 		readline(buf, MAX_LEN);
 		if (buf[0] == '\0')
 			continue;
 		char **args = split_args(buf);
-		int code;
-		if ((code = eval(args, dictionary)) != 0) {
+
+		/* main execution */
+		int code = eval(args, dictionary);
+
+		switch (code) {
+			/* disastrous error */
+		case -1:
 			free(args);
 			free_dictionary(dictionary);
 			return code;
+			break;
+			/* successful execution */
+		case 0:
+			printf("ok\n");
+			break;
+			/* other error, don't show 'ok' */
+		default:
+			break;
 		}
-		puts("ok");
+
 		free(args);
 	}
 }
