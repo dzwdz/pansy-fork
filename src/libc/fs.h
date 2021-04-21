@@ -40,3 +40,4 @@ struct dirent *readdir(DIR* dir);
 int closedir(DIR* dir);
 
 bool is_path_safe(const char *c);
+bool file_exists(const char *path);
