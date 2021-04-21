@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include "tty.h"
 #include "utility.h"
 
@@ -185,7 +187,7 @@ worddef(equal) {
     return tokens;
 }
 
-worddef(dup) {
+worddef(duplicate) {
     int x = pop();
     push(x);
     push(x);
@@ -203,14 +205,18 @@ worddef(colon) {
 
     char *buf = malloc(MAX_LEN);
     strcpy(buf, *tokens++); // initial token
-    for (; strcmp(*tokens, ";") != 0; tokens++) {
+    while (1) {
         // again, this should be removed for when multiple line word declarations are added.
-        if (tokens == NULL) {
+        if (*tokens == NULL) {
             puts("error: unexpected new line");
             exit(1);
         }
+        if (strcmp(*tokens, ";") == 0)
+            break;
         buf = strcat(buf, " ");
         buf = strcat(buf, *tokens);
+
+        tokens++;
     }
 
     word *traverse_word = dict;
@@ -243,7 +249,7 @@ worddef(print) {
     tokens++;
     strcpy(outptr, *tokens++);
 
-    if (*tokens == NULL) {
+    if ((*tokens == NULL) || ((*(tokens - 1))[strlen(*(tokens - 1)) - 1] == '\"')) {
         goto print_copy_done;
     }
 
@@ -313,14 +319,14 @@ word *init_c_words() {
     /*** words defined in C ***/
     /* math */
     add_word(w, (word){"+", true, &add, NULL, NULL});
-    add_word(w, (word){"-", true, &subtract, NULL, NULL}); // todo: can't use - as identifier
+    add_word(w, (word){"-", true, &subtract, NULL, NULL});
     add_word(w, (word){"*", true, &multiply, NULL, NULL});
     add_word(w, (word){">", true, &morethan, NULL, NULL});
     add_word(w, (word){"<", true, &lessthan, NULL, NULL});
     add_word(w, (word){"=", true, &equal, NULL, NULL});
     /* stack manipulation and information */
     add_word(w, (word){".s", true, &show_stack, NULL, NULL});
-    add_word(w, (word){"dup", true, &dup, NULL, NULL});
+    add_word(w, (word){"dup", true, &duplicate, NULL, NULL});
     /* i/o */
     add_word(w, (word){".\"", true, &print, NULL, NULL});
     add_word(w, (word){"emit", true, &emit, NULL, NULL});
@@ -351,7 +357,7 @@ char *words_exist(char **args, word *dictionary) {
         bool found_word = false;
         if (is_number(*args)) {
             found_word = true;
-        } else if (strcmp(prev_token, ":") == 0) {
+        } else if ((strcmp(prev_token, ":") == 0) || (strcmp(prev_token, ".\"") == 0)) {
             /* this token is a new word, of course it doesn't exist yet */
             found_word = true;
         } else {
@@ -415,9 +421,61 @@ void load_words(char words[][MAX_LEN], word *dictionary) {
     }
 }
 
-void cleanup(char **args, word *dictionary) {
-    free(args);
+void cleanup(word *dictionary) {
     free_dictionary(dictionary);
+}
+
+int execute(char *buf, word *dictionary, bool silent) {
+    char **args = split_args(buf);
+
+    /* main execution */
+    int code = eval(args, dictionary);
+
+    switch (code) {
+        /* successful execution */
+    case 0:
+        if (!silent)
+            printf("ok\n");
+        break;
+        /* 'bye' word encountered */
+    case 2:
+        if (!silent)
+            puts("see you later!");
+        /* fallthrough */
+        /* disastrous error */
+    case -1:
+        free(args);
+        return code == 2 ? 0 : code;
+        break;
+        /* other error, don't show 'ok' */
+    default:
+        break;
+    }
+
+    free(args);
+    return 0;
+}
+
+void run_file(int fd, word *dictionary) {
+    char c;
+    size_t i = 0;
+    char buf[MAX_LEN] = {0};
+    while (1) {
+        int status = read(fd, &c, 1);
+        buf[i++] = c;
+        if (status == 0) { // EOF
+            execute(buf, dictionary, true);
+            for (int j = 0; j < MAX_LEN; j++)
+                buf[j] = '\0';
+
+            break;
+        } else if (c == '\n') {
+            execute(buf, dictionary, true);
+            for (int j = 0; j < MAX_LEN; j++)
+                buf[j] = '\0';
+            i = 0;
+        } 
+    }
 }
 
 int main(int argc __attribute__((unused)),
@@ -436,35 +494,31 @@ int main(int argc __attribute__((unused)),
     puts("pansy linux forth");
     puts("pre-alpha");
 
-    char buf[MAX_LEN];
+    char buf[MAX_LEN] = {0};
+
+    if (argc > 1) {
+        for (int i = 1; i < argc; i++) {
+            int input_file = -1;
+            input_file = open(argv[i], O_RDONLY);
+            if (input_file < 0) {
+                puts("failed to open file!");
+                return 1;
+            } else {
+                run_file(input_file, dictionary);
+            }
+            close(input_file);
+        }
+    }
     while (1) {
         readline(buf, MAX_LEN);
+        
         if (buf[0] == '\0')
             continue;
-        char **args = split_args(buf);
 
-        /* main execution */
-        int code = eval(args, dictionary);
-
-        switch (code) {
-            /* successful execution */
-        case 0:
-            printf("ok\n");
-            break;
-            /* 'bye' word encountered */
-        case 2:
-            puts("see you later!");
-            /* fallthrough */
-            /* disastrous error */
-        case -1:
-            cleanup(args, dictionary);
-            return code == 2 ? 0 : code;
-            break;
-            /* other error, don't show 'ok' */
-        default:
-            break;
+        int status = execute(buf, dictionary, false);
+        if (status) {
+            cleanup(dictionary);
+            return status;
         }
-
-        free(args);
     }
 }
