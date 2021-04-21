@@ -23,6 +23,7 @@ QFLAGS += -device e1000,netdev=net0 -netdev user,id=net0,hostfwd=tcp::1312-:80
 
 # files that the final image depends on
 fs := $(patsubst src/bin/%.c,root/bin/%,$(wildcard src/bin/*.c))
+fs += root/etc
 fs += root/Users
 fs += root/lib/modules/e1000.ko
 fs += root/var/www/html/index.html
@@ -42,6 +43,9 @@ clean:
 
 
 ### copy over static files ###
+root/etc: $(shell find static/etc)
+	@cp -r static/etc root/etc
+
 root/Users: $(shell find static/Users)
 	@cp -r static/Users root/Users
 
@@ -63,7 +67,8 @@ root/bin/%: src/bin/%.c root/lib/libc.a
 ### build the libc ###
 ### every binary is statically linked against it ###
 libc_obj := $(patsubst %.c,%.o,$(wildcard src/libc/*.c))
-root/lib/libc.a: src/libc/lowlevel.o $(libc_obj)
+math_obj := $(patsubst %.c,%.o,$(wildcard src/libc/math/*.c))
+root/lib/libc.a: src/libc/lowlevel.o $(libc_obj) $(math_obj)
 	@mkdir -p $(@D)
 	ar rcs $@ $^
 
@@ -73,3 +78,5 @@ src/libc/lowlevel.o: src/libc/lowlevel.s
 src/libc/%.o: src/libc/%.c
 	@${CC} ${CFLAGS} -c $^ -o $@
 
+src/libc/math/%.o: src/libc/math/%.c
+	@${CC} ${CFLAGS} -c $^ -o $@
