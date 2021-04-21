@@ -63,7 +63,8 @@ root/bin/%: src/bin/%.c root/lib/libc.a
 ### build the libc ###
 ### every binary is statically linked against it ###
 libc_obj := $(patsubst %.c,%.o,$(wildcard src/libc/*.c))
-root/lib/libc.a: src/libc/lowlevel.o $(libc_obj)
+math_obj := $(patsubst %.c,%.o,$(wildcard src/libc/math/*.c))
+root/lib/libc.a: src/libc/lowlevel.o $(libc_obj) $(math_obj)
 	@mkdir -p $(@D)
 	ar rcs $@ $^
 
@@ -73,3 +74,5 @@ src/libc/lowlevel.o: src/libc/lowlevel.s
 src/libc/%.o: src/libc/%.c
 	@${CC} ${CFLAGS} -c $^ -o $@
 
+src/libc/math/%.o: src/libc/math/%.c
+	@${CC} ${CFLAGS} -c $^ -o $@
