@@ -344,17 +344,6 @@ word *init_c_words() {
     return w;
 }
 
-#ifdef DEBUG
-void print_words(word *w) {
-    printf("%s\n", w->name);
-    if (w->next == NULL) {
-        printf("NULL\n");
-        return;
-    }
-    print_words(w->next);
-}
-#endif /* DEBUG */
-
 /* central functions */
 char *words_exist(char **args, word *dictionary) {
     bool printing_string = false;
