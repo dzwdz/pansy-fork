@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include "fs.h"
 #include "tty.h"
 #include "utility.h"
 
@@ -207,6 +208,7 @@ worddef(colon) {
     strcpy(buf, *tokens++); // initial token
     while (1) {
         // again, this should be removed for when multiple line word declarations are added.
+        // also shouldn't crash the interpreter
         if (*tokens == NULL) {
             puts("error: unexpected new line");
             exit(1);
@@ -244,15 +246,16 @@ worddef(colon) {
 }
 
 worddef(print) {
-    char buf[MAX_LEN];
+    char buf[MAX_LEN] = {0};
     char *outptr = buf;
     tokens++;
-    strcpy(outptr, *tokens++);
+    strcpy(outptr, *tokens);
 
     if ((*tokens == NULL) || ((*(tokens - 1))[strlen(*(tokens - 1)) - 1] == '\"')) {
         goto print_copy_done;
     }
 
+    tokens++;
     while (1) {
         outptr = strcat(outptr, " ");
         outptr = strcat(outptr, *tokens);
@@ -280,7 +283,9 @@ worddef(dump_dictionary) {
         if (traverse_word == NULL) {
             return tokens;
         } else {
-            puts(traverse_word->name);
+            printf("%s - %s\n",
+                   traverse_word->name,
+                   traverse_word->c_code ? "C function" : traverse_word->forth_code);
             traverse_word = traverse_word->next;
         }
     }
@@ -352,13 +357,23 @@ void print_words(word *w) {
 
 /* central functions */
 char *words_exist(char **args, word *dictionary) {
-    char prev_token[MAX_LEN];
+    bool printing_string = false;
+
     while (*args) {
         bool found_word = false;
+
         if (is_number(*args)) {
             found_word = true;
-        } else if ((strcmp(prev_token, ":") == 0) || (strcmp(prev_token, ".\"") == 0)) {
+        } else if (printing_string) {
+            if ((*args)[strlen(*args) - 1] == '"')
+                printing_string = false;
+            found_word = true;
+        } else if ((*(args - 1) != NULL) && // bounds checking
+                   (strcmp(*(args - 1), ":") == 0)) {
             /* this token is a new word, of course it doesn't exist yet */
+            found_word = true;
+        } else if (strcmp(*args, ".\"") == 0) {
+            printing_string = true;
             found_word = true;
         } else {
             word *traverse_word = dictionary;
@@ -373,7 +388,6 @@ char *words_exist(char **args, word *dictionary) {
         }
         if (!found_word)
             return *args;
-        strcpy(prev_token, *args);
         args++;
     }
     return NULL;
@@ -445,7 +459,7 @@ int execute(char *buf, word *dictionary, bool silent) {
         /* disastrous error */
     case -1:
         free(args);
-        return code == 2 ? 0 : code;
+        return code;
         break;
         /* other error, don't show 'ok' */
     default:
@@ -482,19 +496,22 @@ int main(int argc __attribute__((unused)),
          char *argv[] __attribute__((unused))) {
     word *dictionary = init_c_words();
 
-    char startup_code[][MAX_LEN] = {
-        ": cr  10 emit ;",
-        ": spaces  32 emit ;",
-        "END"
-    };
-
-    load_words(startup_code, dictionary);
-
     /* header */
     puts("pansy linux forth");
     puts("pre-alpha");
 
     char buf[MAX_LEN] = {0};
+
+    const char *startup_file = "/etc/forth/startup.fs";
+    if (file_exists(startup_file)) {
+        int input_file = -1;
+        input_file = open(startup_file, O_RDONLY);
+        if (input_file < 0)
+            puts("failed to open startup file");
+        else
+            run_file(input_file, dictionary);
+        close(input_file);
+    }
 
     if (argc > 1) {
         for (int i = 1; i < argc; i++) {
@@ -518,7 +535,7 @@ int main(int argc __attribute__((unused)),
         int status = execute(buf, dictionary, false);
         if (status) {
             cleanup(dictionary);
-            return status;
+            return status == 2 ? 0 : status;
         }
     }
 }
