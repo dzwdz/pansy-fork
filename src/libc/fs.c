@@ -104,3 +104,8 @@ bool is_path_safe(const char *c) {
     }
     return true;
 }
+
+bool file_exists (const char *path) {
+  struct stat buffer;
+  return (stat(path, &buffer) == 0);
+}

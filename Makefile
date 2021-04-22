@@ -1,4 +1,5 @@
-.PHONY: boot clean
+export # make sure sub-makes get all our vars
+.PHONY: boot clean nested
 
 CC     ?= gcc
 CFLAGS := ${CFLAGS}
@@ -20,7 +21,6 @@ QFLAGS += -kernel $(KERNEL) -append "${KFLAGS}" -m 1G -nographic
 QFLAGS += -device e1000,netdev=net0 -netdev user,id=net0,hostfwd=tcp::1312-:80
 
 
-
 # files that the final image depends on
 fs := $(patsubst src/bin/%.c,root/bin/%,$(wildcard src/bin/*.c))
 fs += root/etc
@@ -29,7 +29,7 @@ fs += root/lib/modules/e1000.ko
 fs += root/var/www/html/index.html
 fs += root/var/www/html/favicon.png
 
-initramfs.cpio.gz: $(fs)
+initramfs.cpio.gz: $(fs) nested
 	@cp root/bin/init root/init
 	find root/ | cut -sd / -f 2- | cpio -o --format=newc -Droot/ -R root:root | gzip -9 > $@
 
@@ -63,7 +63,6 @@ root/bin/%: src/bin/%.c root/lib/libc.a
 	@mkdir -p $(@D)
 	@${CC} ${CFLAGS} $^ -o $@
 
-
 ### build the libc ###
 ### every binary is statically linked against it ###
 libc_obj := $(patsubst %.c,%.o,$(wildcard src/libc/*.c))
@@ -80,3 +79,14 @@ src/libc/%.o: src/libc/%.c
 
 src/libc/math/%.o: src/libc/math/%.c
 	@${CC} ${CFLAGS} -c $^ -o $@
+
+# what a hack
+M := $(shell find . -type d | grep src/bin/)
+
+LIBC := ../../../root/lib/libc.a
+CFLAGS += -I../../libc/
+
+nested:
+	@for dir in $(M); do \
+		$(MAKE) -C $$dir -f ../../../Cursedfile --no-print-directory ; \
+	done

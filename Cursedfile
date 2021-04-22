@@ -1,0 +1,4 @@
+NAME := $(shell basename $(shell pwd))
+
+../../../root/bin/$(NAME): *.c
+	${CC} ${CFLAGS} ${LIBC} $^ -o $@
