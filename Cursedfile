@@ -1,4 +1,4 @@
-NAME := $(shell basename $(shell pwd))
+NAME := $(shell basename $(DIR))
 
-../../../root/bin/$(NAME): *.c
-	${CC} ${CFLAGS} ${LIBC} $^ -o $@
+root/bin/$(NAME): $(DIR)/*.c root/lib/libc.a
+	${CC} ${CFLAGS} $^ -o $@

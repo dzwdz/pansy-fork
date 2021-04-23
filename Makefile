@@ -23,11 +23,8 @@ QFLAGS += -device e1000,netdev=net0 -netdev user,id=net0,hostfwd=tcp::1312-:80
 
 # files that the final image depends on
 fs := $(patsubst src/bin/%.c,root/bin/%,$(wildcard src/bin/*.c))
-fs += root/etc
-fs += root/Users
+fs += $(patsubst static/,root/,$(shell find static/))
 fs += root/lib/modules/e1000.ko
-fs += root/var/www/html/index.html
-fs += root/var/www/html/favicon.png
 
 initramfs.cpio.gz: $(fs) nested
 	@cp root/bin/init root/init
@@ -43,12 +40,6 @@ clean:
 
 
 ### copy over static files ###
-root/etc: $(shell find static/etc)
-	@cp -r static/etc root/etc
-
-root/Users: $(shell find static/Users)
-	@cp -r static/Users root/Users
-
 root/lib/modules/e1000.ko: deps/e1000.ko
 	@mkdir -p $(@D)
 	@cp $< $@
@@ -59,15 +50,25 @@ root/%: static/%
 
 
 ### build all of /bin ###
+# the single file build is simple enough
 root/bin/%: src/bin/%.c root/lib/libc.a
 	@mkdir -p $(@D)
 	@${CC} ${CFLAGS} $^ -o $@
 
+# but the thing is, some binaries have multiple source files
+# we build those using this mess
+M := $(shell find . -type d | grep src/bin/)
+nested:
+	@for dir in $(M); do \
+		DIR=$$dir $(MAKE) -f Cursedfile --no-print-directory; \
+	done
+
+
+
 ### build the libc ###
 ### every binary is statically linked against it ###
-libc_obj := $(patsubst %.c,%.o,$(wildcard src/libc/*.c))
-math_obj := $(patsubst %.c,%.o,$(wildcard src/libc/math/*.c))
-root/lib/libc.a: src/libc/lowlevel.o $(libc_obj) $(math_obj)
+libc_obj := $(patsubst %.c,%.o,$(shell find src/libc/ -type f -name '*.c'))
+root/lib/libc.a: src/libc/lowlevel.o $(libc_obj)
 	@mkdir -p $(@D)
 	ar rcs $@ $^
 
@@ -77,16 +78,3 @@ src/libc/lowlevel.o: src/libc/lowlevel.s
 src/libc/%.o: src/libc/%.c
 	@${CC} ${CFLAGS} -c $^ -o $@
 
-src/libc/math/%.o: src/libc/math/%.c
-	@${CC} ${CFLAGS} -c $^ -o $@
-
-# what a hack
-M := $(shell find . -type d | grep src/bin/)
-
-LIBC := ../../../root/lib/libc.a
-CFLAGS += -I../../libc/
-
-nested:
-	@for dir in $(M); do \
-		$(MAKE) -C $$dir -f ../../../Cursedfile --no-print-directory ; \
-	done
