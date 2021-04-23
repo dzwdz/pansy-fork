@@ -170,6 +170,20 @@ worddef(multiply) {
     return tokens;
 }
 
+worddef(divide) {
+    int x = pop();
+    push(pop() / x);
+
+    return tokens;
+}
+
+worddef(modulo) {
+    int x = pop();
+    push(pop() % x);
+
+    return tokens;
+}
+
 worddef(morethan) {
     push(pop() < pop() ? -1 : 0);
 
@@ -303,15 +317,13 @@ worddef(show_stack) {
     return tokens;
 }
 
-worddef(semicolon) {
-    return tokens;
-}
-
-worddef(bye) {
+worddef(noop) {
     return tokens;
 }
 
 /* end of word declarations */
+
+#define c_word(dictionary, name, func)  add_word(dictionary, (word){name, true, func, NULL, NULL});
 
 word *init_c_words() {
     word *w = malloc(sizeof(word));
@@ -323,23 +335,27 @@ word *init_c_words() {
 
     /*** words defined in C ***/
     /* math */
-    add_word(w, (word){"+", true, &add, NULL, NULL});
-    add_word(w, (word){"-", true, &subtract, NULL, NULL});
-    add_word(w, (word){"*", true, &multiply, NULL, NULL});
-    add_word(w, (word){">", true, &morethan, NULL, NULL});
-    add_word(w, (word){"<", true, &lessthan, NULL, NULL});
-    add_word(w, (word){"=", true, &equal, NULL, NULL});
+    c_word(w, "+", &add);
+    c_word(w, "-", &subtract);
+    c_word(w, "*", &multiply);
+    c_word(w, "/", &divide);
+    c_word(w, "mod", &modulo);
+    c_word(w, ">", &morethan);
+    c_word(w, "<", &lessthan);
+    c_word(w, "=", &equal);
     /* stack manipulation and information */
-    add_word(w, (word){".s", true, &show_stack, NULL, NULL});
-    add_word(w, (word){"dup", true, &duplicate, NULL, NULL});
+    c_word(w, ".s", &show_stack);
+    c_word(w, "dup", &duplicate);
     /* i/o */
-    add_word(w, (word){".\"", true, &print, NULL, NULL});
-    add_word(w, (word){"emit", true, &emit, NULL, NULL});
+    c_word(w, ".\"", &print);
+    c_word(w, "emit", &emit);
     /* meta */
-    add_word(w, (word){":", true, &colon, NULL, NULL});
-    add_word(w, (word){";", true, &semicolon, NULL, NULL});
-    add_word(w, (word){"bye", true, &bye, NULL, NULL});
-    add_word(w, (word){"dump", true, &dump_dictionary, NULL, NULL});
+    c_word(w, ":", &colon);
+    c_word(w, ";", &noop);
+    c_word(w, "(", &noop);
+    c_word(w, ")", &noop);
+    c_word(w, "bye", &noop);
+    c_word(w, "dump", &dump_dictionary);
 
     return w;
 }
@@ -347,11 +363,12 @@ word *init_c_words() {
 /* central functions */
 char *words_exist(char **args, word *dictionary) {
     bool printing_string = false;
+    bool in_comment = false;
 
     while (*args) {
         bool found_word = false;
 
-        if (is_number(*args)) {
+        if (is_number(*args) || in_comment) {
             found_word = true;
         } else if (printing_string) {
             if ((*args)[strlen(*args) - 1] == '"')
@@ -361,7 +378,9 @@ char *words_exist(char **args, word *dictionary) {
                    (strcmp(*(args - 1), ":") == 0)) {
             /* this token is a new word, of course it doesn't exist yet */
             found_word = true;
-        } else if (strcmp(*args, ".\"") == 0) {
+        } else if (!strcmp(*args, "(") || !strcmp(*args, ")")) {
+            in_comment = !in_comment;
+        } else if (!strcmp(*args, ".\"")) {
             printing_string = true;
             found_word = true;
         } else {
