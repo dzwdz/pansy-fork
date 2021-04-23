@@ -15,6 +15,17 @@
  * a forth interpreter for pansy linux
  */
 
+/* NOTES:
+ * pansy linux forth has several restrictions since opfez is quite lazy.
+ *  - Stuff that usually is multiline in other forth systems, i.e. word
+ *    declarations with ':', printing text with '."' and creating comments with
+ *    '(' and ')'.
+ *  - There's no variables (yet).
+ *  - When redifining a word, the old code is overwritten by the new
+ *    declaration. This means we do not support stuff like the 'forget' word in
+ *    other forth systems.
+ */
+
 /* stolen from sh.c */
 char **split_args(const char* str) {
     /* shared_buf is static in sh.c since our malloc isn't properly made yet.
