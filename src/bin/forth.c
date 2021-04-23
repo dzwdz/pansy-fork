@@ -184,6 +184,15 @@ worddef(modulo) {
     return tokens;
 }
 
+worddef(divmod) {
+    int x = pop();
+    int y = pop();
+    push(y % x);
+    push(y / x);
+
+    return tokens;
+}
+
 worddef(morethan) {
     push(pop() < pop() ? -1 : 0);
 
@@ -202,10 +211,92 @@ worddef(equal) {
     return tokens;
 }
 
+/* a lot of the following can probably be moved when we add variables to the interpreter */
+
+worddef(swap) {
+    int x = pop();
+    int y = pop();
+    push(x);
+    push(y);
+
+    return tokens;
+}
+
+worddef(two_swap) {
+    int x = pop();
+    int y = pop();
+    int x2 = pop();
+    int y2 = pop();
+
+    push(y);
+    push(x);
+    push(y2);
+    push(x2);
+
+    return tokens;
+}
+
 worddef(duplicate) {
     int x = pop();
     push(x);
     push(x);
+
+    return tokens;
+}
+
+worddef(two_duplicate) {
+    int x = pop();
+    int y = pop();
+
+    push(y);
+    push(x);
+    push(y);
+    push(x);
+
+    return tokens;
+}
+
+worddef(over) {
+    int x = pop();
+    int y = pop();
+
+    push(y);
+    push(x);
+    push(y);
+
+    return tokens;
+}
+
+worddef(two_over) {
+    int x = pop();
+    int x2 = pop();
+    int y = pop();
+    int y2 = pop();
+
+    push(y2);
+    push(y);
+    push(x2);
+    push(x);
+    push(y2);
+    push(y);
+
+    return tokens;
+}
+
+worddef(drop) {
+    pop();
+    
+    return tokens;
+}
+
+worddef(rotate) {
+    int x = pop();
+    int y = pop();
+    int z = pop();
+
+    push(y);
+    push(x);
+    push(z);
 
     return tokens;
 }
@@ -255,6 +346,7 @@ worddef(colon) {
     /* word doesn't exist, add a new */
     strcpy(tmp.forth_code, buf);
     add_word(dict, tmp);
+    free(buf);
 
     return tokens;
 }
@@ -310,8 +402,8 @@ worddef(dump_dictionary) {
 worddef(show_stack) {
     int elems = sp - stack;
     printf("<%d> ", elems);
-    for (int i = elems; i > 0; i--) {
-        printf("%d ", stack[i-1]);
+    for (int i = 0; i < elems; i++) {
+        printf("%d ", stack[i]);
     }
 
     return tokens;
@@ -340,12 +432,20 @@ word *init_c_words() {
     c_word(w, "*", &multiply);
     c_word(w, "/", &divide);
     c_word(w, "mod", &modulo);
+    c_word(w, "/mod", &divmod);
     c_word(w, ">", &morethan);
     c_word(w, "<", &lessthan);
     c_word(w, "=", &equal);
     /* stack manipulation and information */
-    c_word(w, ".s", &show_stack);
+    c_word(w, "swap", &swap);
+    c_word(w, "2swap", &two_swap);
     c_word(w, "dup", &duplicate);
+    c_word(w, "2dup", &two_duplicate);
+    c_word(w, "over", &over);
+    c_word(w, "2over", &two_over);
+    c_word(w, "drop", &drop);
+    c_word(w, "rot", &rotate);
+    c_word(w, ".s", &show_stack);
     /* i/o */
     c_word(w, ".\"", &print);
     c_word(w, "emit", &emit);
@@ -380,6 +480,7 @@ char *words_exist(char **args, word *dictionary) {
             found_word = true;
         } else if (!strcmp(*args, "(") || !strcmp(*args, ")")) {
             in_comment = !in_comment;
+            found_word = true;
         } else if (!strcmp(*args, ".\"")) {
             printing_string = true;
             found_word = true;
@@ -435,14 +536,6 @@ int eval(char **args, word *dictionary) {
     return 0;
 }
 
-void load_words(char words[][MAX_LEN], word *dictionary) {
-    for (size_t i = 0; strcmp(words[i], "END") != 0; i++) {
-        char **args = split_args(words[i]);
-        eval(args, dictionary);
-        free(args);
-    }
-}
-
 void cleanup(word *dictionary) {
     free_dictionary(dictionary);
 }
@@ -453,11 +546,13 @@ int execute(char *buf, word *dictionary, bool silent) {
     /* main execution */
     int code = eval(args, dictionary);
 
+    free(args);
+
     switch (code) {
         /* successful execution */
     case 0:
         if (!silent)
-            printf("ok\n");
+            puts("ok");
         break;
         /* 'bye' word encountered */
     case 2:
@@ -466,7 +561,6 @@ int execute(char *buf, word *dictionary, bool silent) {
         /* fallthrough */
         /* disastrous error */
     case -1:
-        free(args);
         return code;
         break;
         /* other error, don't show 'ok' */
@@ -474,7 +568,6 @@ int execute(char *buf, word *dictionary, bool silent) {
         break;
     }
 
-    free(args);
     return 0;
 }
 
