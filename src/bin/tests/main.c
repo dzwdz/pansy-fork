@@ -4,6 +4,8 @@
 // malloc.c
 bool test_malloc();
 
+// bignums.c
+bool test_bignum();
 
 // test runners are supposed to return true on success, false on failure
 struct test_runner {
@@ -12,7 +14,8 @@ struct test_runner {
 };
 
 struct test_runner runners[] = {
-	{"malloc", &test_malloc},
+//	{"malloc", &test_malloc},
+	{"bignum", &test_bignum},
 	{NULL, NULL}
 };
 

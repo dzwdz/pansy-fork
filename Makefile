@@ -58,7 +58,7 @@ root/bin/%: src/bin/%.c root/lib/libc.a
 # but the thing is, some binaries have multiple source files
 # we build those using this mess
 M := $(shell find . -type d | grep src/bin/)
-nested:
+nested: root/lib/libc.a
 	@for dir in $(M); do \
 		DIR=$$dir $(MAKE) -f Cursedfile --no-print-directory; \
 	done
