@@ -29,6 +29,14 @@ int open(const char *path, int flags, ...) {
     return syscall(SYS_open, path, flags, 0);
 }
 
+int unlink(const char *path) {
+    return syscall(SYS_unlink, path);
+}
+
+int rmdir(const char *path) {
+    return syscall(SYS_rmdir, path);
+}
+
 int ioctl(int fd, unsigned long req, ...) {
     va_list ap;
     va_start(ap, req);
