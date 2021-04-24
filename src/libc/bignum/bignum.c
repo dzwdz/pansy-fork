@@ -36,14 +36,20 @@ void bignum_print(const bignum *a) {
 	puts("");
 }
 
-// this is broken
+// will do very weird things if the input string isn't hex
 void bignum_fromhex(bignum *target, const char *hex) {
 	bignum_zeroout(target);
-	int nibble = 0;
-	for (int i = strlen(hex); i >= 0; i--) {
-		uint64_t digit = hex[i] - '0';
-		if (nibble & 1) digit <<= 4;
 
+	int nibble = 0;
+	uint64_t digit;
+	for (int i = strlen(hex) - 1; i >= 0; i--) {
+		char c = hex[i];
+		     if ('0' <= c && c <= '9') digit = hex[i] - '0';
+		else if ('a' <= c && c <= 'f') digit = hex[i] - 'a' + 0xa;
+		else if ('A' <= c && c <= 'F') digit = hex[i] - 'A' + 0xA;
+		else digit = 0;
+
+		if (nibble & 1) digit <<= 4;
 		int byte = (nibble >> 1) & 0b111;
 		digit <<= 8 * byte;
 
