@@ -8,7 +8,7 @@ void rm_path(char **paths) {
     char *d;
 
     while ((d = *paths++) != NULL) {
-        int status = -stat(d, &s);
+        int status = -lstat(d, &s);
         if (status == 2) {
             printf("rmdir: Cannot remove %s, no such file or directory.", d);
         } else if (!S_ISDIR(s.st_mode)) {
@@ -25,8 +25,10 @@ void rm_path(char **paths) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc < 2)
+    if (argc < 2) {
+        printf("usage: rmdir DIRECTORY...");
         return 0;
+    }
     argv++;
     rm_path(argv);
 }

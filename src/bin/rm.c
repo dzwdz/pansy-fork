@@ -2,14 +2,14 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-// TODO: print errors stderr
+// TODO: print errors to stderr
 void rm_file(char **files) {
     struct stat s;
     char *f;
 
     while ((f = *files++) != NULL) {
-        int status = stat(f, &s);
-        if (status == -2) {
+        int status = -lstat(f, &s);
+        if (status == 2) {
             printf("rm: Cannot remove %s, no such file or directory.\n", f);
         } else if (S_ISDIR(s.st_mode)) {
             printf("rm: %s is a directory.\n", f);
@@ -25,8 +25,10 @@ void rm_file(char **files) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc < 2)
+    if (argc < 2) {
+        printf("usage: rm FILE...\n");
         return 0;
+    }
     argv++;
     rm_file(argv);
 }

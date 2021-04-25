@@ -24,6 +24,10 @@ int mkdir(const char *pathname, mode_t mode) {
     return syscall(SYS_mkdir, pathname, mode);
 }
 
+int creat(const char *pathname, mode_t mode) {
+    return syscall(SYS_creat, pathname, mode);
+}
+
 // TODO this should do more stuff
 int open(const char *path, int flags, ...) {
     return syscall(SYS_open, path, flags, 0);
@@ -53,6 +57,10 @@ int mknod(const char *pathname, mode_t mode, dev_t dev) {
 
 int stat(const char *path, struct stat *statbuf) {
     return syscall(SYS_stat, path, statbuf);
+}
+
+int lstat(const char *path, struct stat *statbuf) {
+    return syscall(SYS_lstat, path, statbuf);
 }
 
 int fstat(int fd, struct stat *statbuf) {
