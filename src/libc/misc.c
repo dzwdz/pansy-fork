@@ -52,7 +52,7 @@ int printf(const char *fmt, ...) {
                 int i = 0;
                 while (num >> i && i < (sizeof(int) * 8)) i += 4;
                 if (i == 0) i = 4;
-                
+
                 write(1, "0x", 2);
                 while (i > 0) {
                     i -= 4;
@@ -108,8 +108,6 @@ int printf(const char *fmt, ...) {
 }
 
 bool is_number(const char *str) {
-    if (!((*str > '0' && *str < '9') || *str == '-'))
-        return false;
     if ((*str == '-') && (strlen(str) == 1))
         return false;
     for (size_t i = *str == '-' ? 1 : 0; i < strlen(str); i++) {

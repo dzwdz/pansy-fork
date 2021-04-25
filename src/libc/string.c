@@ -43,3 +43,13 @@ char *strncat(char *dest, const char *src, size_t n) {
 
     return dest;
 }
+
+void *memset(void *dest, int c, size_t n) {
+    if (n == 0)
+        return dest;
+    unsigned char *d = dest;
+    while ((n-- + 1) != 0) {
+        *d++ = (unsigned char) c;
+    }
+    return dest;
+}
