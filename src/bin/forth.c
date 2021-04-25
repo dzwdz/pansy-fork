@@ -1,3 +1,14 @@
+/* NOTES:
+ * pansy linux forth has several restrictions since opfez is quite lazy.
+ *  - Stuff that usually is multiline in other forth systems, i.e. word
+ *    declarations with ':', printing text with '."' and creating comments with
+ *    '(' and ')'.
+ *  - There's no variables (yet).
+ *  - When redifining a word, the old code is overwritten by the new
+ *    declaration. This means we do not support stuff like the 'forget' word in
+ *    other forth systems.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,21 +21,6 @@
 
 #define MAX_LEN 256
 #define STACK_SIZE 300
-
-/* forth.c
- * a forth interpreter for pansy linux
- */
-
-/* NOTES:
- * pansy linux forth has several restrictions since opfez is quite lazy.
- *  - Stuff that usually is multiline in other forth systems, i.e. word
- *    declarations with ':', printing text with '."' and creating comments with
- *    '(' and ')'.
- *  - There's no variables (yet).
- *  - When redifining a word, the old code is overwritten by the new
- *    declaration. This means we do not support stuff like the 'forget' word in
- *    other forth systems.
- */
 
 /* stolen from sh.c */
 char **split_args(const char* str) {
@@ -86,14 +82,14 @@ char **split_args(const char* str) {
 }
 
 /* global stuff */
-int stack[STACK_SIZE] = {0};  // todo: variable size stack
+int stack[STACK_SIZE] = {0};  // TODO: variable size stack
 int *sp = stack; // stack pointer
 
 /* essential functions */
 void push(int n) {
     if (sp == stack + STACK_SIZE) {
         puts("stack overflow!");
-        return; // todo: should error out loudly, stopping execution
+        return; // TODO: should error out loudly, stopping execution
     }
     *sp++ = n;
 }
@@ -101,7 +97,7 @@ void push(int n) {
 int pop() {
     if (sp == stack) {
         puts("stack underflow!");
-        return 0; // todo: don't return 0
+        return 0; // TODO: don't return 0
                   // should error out loudly, stopping execution
     }
     return *--sp;
@@ -110,7 +106,7 @@ int pop() {
 /* dictionary */
 typedef struct word word;
 struct word {
-    char name[64]; // todo: variable size names
+    char name[64]; // TODO: variable size names
     bool c_code;
     char **(* c_func)(); // NULL if c_code == false
     char *forth_code; // NULL if c_code == true
@@ -312,13 +308,13 @@ worddef(rotate) {
     return tokens;
 }
 
-// todo: allow multiple line word declarations
+// TODO: allow multiple line word declarations
 worddef(colon) {
     word tmp = {"", false, NULL, NULL, NULL};
 
     tokens++;
     strcpy(tmp.name, *tokens++);
-    tmp.forth_code = malloc(MAX_LEN);  // todo: variable width new words
+    tmp.forth_code = malloc(MAX_LEN);  // TODO: variable width new words
 
     char *buf = malloc(MAX_LEN);
     strcpy(buf, *tokens++); // initial token

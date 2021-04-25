@@ -3,11 +3,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-/* clone of p (paginate) from plan9
- * usage: p [ -number ] [ file ...  ]
- * number specifies number of lines in a page
- */
-
 int print_lines(int fd, int n) {
     char c;
     for (int i = 0; i < n; i++) {
