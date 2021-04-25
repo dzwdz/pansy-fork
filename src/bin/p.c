@@ -26,9 +26,19 @@ int print_lines(int fd, int n) {
     return EOF;
 }
 
-// TODO: deal with reading from stdin if no file is provided
 int main(int argc, char *argv[]) {
     int line_num = 22;
+
+    /* no filename provided, read from stdin */
+    if (argc < 2) {
+        int status = 1;
+        while (status != EOF) {
+            status = print_lines(STDIN_FILENO, line_num);
+            char c;
+            read(STDIN_FILENO, &c, 1);
+        }
+        return 0;
+    }
 
     for (int i = 0; i < argc; i++) {
         if (argv[i][0] == '-') {
