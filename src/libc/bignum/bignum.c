@@ -105,10 +105,25 @@ void bignum_sub(bignum *result, const bignum *a, const bignum *b) {
 
 	bool overflow = false;
 	for (int i = 0; i < length; i++) {
-		if (overflow)
-			overflow = __builtin_sub_overflow(a->digits[i], 1, &result->digits[i]);
+		// i am handling overflows in a dumb (and slow) way because __builtin_sub_overflow
+		// didn't seem to work
+		// possible bottleneck, todo
+		
+		if (overflow) {
+			if (a->digits[i] == 0) {
+				result->digits[i] = ~0;
+			} else {
+				result->digits[i]--;
+				overflow = false;
+			}
+		}
 
-		overflow |= __builtin_sub_overflow(a->digits[i], b->digits[i], &result->digits[i]);
+		if (a->digits[i] >= b->digits[i]) {
+			result->digits[i] = a->digits[i] - b->digits[i];
+		} else {
+			overflow = true;
+			result->digits[i] = ((~0) - b->digits[i]) + a->digits[i];
+		}
 	}
 
 	for (int i = length; i < result->length; i++) {
