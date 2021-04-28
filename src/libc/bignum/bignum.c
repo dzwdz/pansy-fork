@@ -15,7 +15,7 @@ bignum* bignum_new(uint16_t bytes) {
 	if (bytes % sizeof(uint64_t))
 		size += sizeof(uint64_t);
 
-	bignum *b = malloc(size * sizeof(uint64_t) + sizeof(uint16_t));
+	bignum *b = malloc(size * sizeof(uint64_t) + sizeof(uint16_t) + 69); // TODO MEMORY CORRUPTION HAPPENS AROUND HERE THE 69 IS A WORKAROUND
 	b->length = size;
 	bignum_zeroout(b);
 	return b;
@@ -69,7 +69,7 @@ void bignum_copy(bignum *dest, const bignum *src) {
 	if (src->length < to_copy)
 		to_copy = src->length;
 
-	memcpy(dest, src, to_copy);
+	memcpy(dest, src, to_copy * sizeof(uint64_t));
 }
 
 
@@ -122,13 +122,37 @@ void bignum_sub(bignum *result, const bignum *a, const bignum *b) {
 			result->digits[i] = a->digits[i] - b->digits[i];
 		} else {
 			overflow = true;
-			result->digits[i] = ((~0) - b->digits[i]) + a->digits[i];
+			result->digits[i] = ((~0) - b->digits[i]) + a->digits[i] + 1;
 		}
 	}
 
 	for (int i = length; i < result->length; i++) {
 		result->digits[i] = overflow ? ~0 : 0;
 	}
+}
+
+// returns -1 if a < b
+//          0 if a = b
+//          1 if a > b
+int8_t bignum_compare (const bignum *a, const bignum *b) {
+	// handle numbers of different sizes
+	if (a->length < b->length) {
+		for (int i = a->length; i < b->length; i++) {
+			if (b->digits[i] != 0) return -1;
+		}
+	} else if (b->length < a->length) {
+		for (int i = b->length; i < a->length; i++) {
+			if (a->digits[i] != 0) return -1;
+		}
+	}
+
+	for (int i = a->length - 1; i >= 0; i--) {
+		if (a->digits[i] == b->digits[i]) continue;
+		if (a->digits[i] <  b->digits[i]) return -1;
+		                            else  return  1;
+	}
+
+	return 0;
 }
 
 void bignum_mul(bignum *result, const bignum *a, const bignum *b) {
@@ -157,9 +181,8 @@ void bignum_mul(bignum *result, const bignum *a, const bignum *b) {
 void bignum_div(const bignum *dividend, const bignum *divisor,
 		bignum *quotient, bignum *remainder) {
 
-	/*
-	int divisor_order = bignum_order(divisor);
 	int dividend_order = bignum_order(dividend);
+	int divisor_order = bignum_order(divisor);
 
 	// assert divisor_order != 0
 
@@ -167,53 +190,60 @@ void bignum_div(const bignum *dividend, const bignum *divisor,
 	// the whole math
 	if (dividend_order < divisor_order) {
 		bignum_copy(remainder, dividend);
-		bignum_zeroout(dividend);
+		bignum_zeroout(quotient);
 		return;
 	}
 
-	// remainder = divisor_order - 1 most sig. digits of dividend;
-	//
-	// dividend 123456789   order = 9
-	// divisor         123  order = 3
-	//          1234567     skipping 7 = 9 - 3 + 1
-	//                 8    starting at 9 - 3 + 2
-	//                 89   copying 2 = 3 - 1 digits
+	// remainder = [divisor_order - 1] most significant digits of dividend
+	// the most significant digit of the dividend is at [dividend_order - 1]
+	//     if we're taking 1 digit we'd start at [dividend_order - 1], copy 1
+	//                     2 digits              [dividend_order - 2], copy 2
 	bignum_zeroout(remainder);
-	memcpy(remainder->digits,
-	       &dividend->[dividend_order - divisor_order + 2],
-		   divisor_order - 1);
+	memcpy(remainder->digits, &dividend->digits[dividend_order - (divisor_order - 1)], (divisor_order - 1) * sizeof(uint64_t));
 
 	bignum *intermediate = bignum_new(divisor_order + 2);
+	bignum *d = bignum_new(1);
+	bignum *multiple = bignum_new(divisor_order + 2);
 
-	for (int i = 0; i <= dividend_order + divisor_order; i++) {
-		// this might be wrong
+	for (int i = 0; i <= dividend_order - divisor_order; i++) {
+		bignum_zeroout(intermediate);
+		// the least significant digit is the [divisor_order + i]th ms one of
+		// the dividend
 		intermediate->digits[0] =
-			dividend->[dividend_order - divisor_order + 1 - i];
+			dividend->digits[dividend_order - (divisor_order + i)];
+		// then the rest of it is the remainder
 		memcpy(&intermediate->digits[1],
-			   remainder->digits,
-			   divisor_order - 1);
+		       remainder->digits,
+		       divisor_order * sizeof(uint64_t));
 
-		// binary search for the largest d / multiple of the divisor that's less
-		// than it
-		uint64_t min_d = 0, max_d = ~0, d_next;
-		while (min_d <= max_d) {
-			d_next = (min_d >> 1) + (max_d >> 1);
+		// binary search for the biggest d for which d * divisor < intermediate
+		uint64_t low =  0,
+		        high = ~0;
+		while (low <= high) {
+			d->digits[0] = (low >> 1) + (high >> 1);
 
-			[[ a custom algorithm for comparing a bignum * uint64 with a bignum ]];
+			bignum_mul(multiple, d, divisor);
+			int8_t diff = bignum_compare(multiple, intermediate);
 
-			if (bigger) {
-				min_d = d_next + 1;
-			} else if (smaller) {
-				max_d = d_next - 1;
-			} else { break; } // we could end the outer loop here, maybe. honestly idk
+			if (diff < 0) {
+				low = d->digits[0] + 1;
+			} else if (diff > 0) {
+				high = d->digits[0] - 1;
+			} else { break; }
 		}
-		[[ swap the quotient around ]]
 
-		// remainder = divident - d * divisor
+		// todo do stuff with the low / high
+		// and also update quotient
+		d->digits[0] = high;
+
+		// remainder = dividend - d * divisor
 		bignum_copy(remainder, dividend);
-		bignum_mul(intermediate, divisor, d);
-		bignum_sub(remainder, intermediate);
+		bignum_mul(multiple, d, divisor);
+		bignum_print(multiple);
+		bignum_sub(remainder, remainder, multiple);
 	}
 
-	free(intermediate);*/
+	free(intermediate);
+	free(d);
+	free(multiple);
 }
