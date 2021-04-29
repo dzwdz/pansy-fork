@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 static void bignum_zeroout(bignum *a) {
 	for (int i = 0; i < a->length; i++) {
@@ -15,7 +16,7 @@ bignum* bignum_new(uint16_t bytes) {
 	if (bytes % sizeof(uint64_t))
 		size += sizeof(uint64_t);
 
-	bignum *b = malloc(size * sizeof(uint64_t) + sizeof(uint16_t) + 69); // TODO MEMORY CORRUPTION HAPPENS AROUND HERE THE 69 IS A WORKAROUND
+	bignum *b = malloc(sizeof(bignum) + size * sizeof(uint64_t));
 	b->length = size;
 	bignum_zeroout(b);
 	return b;
@@ -186,11 +187,12 @@ void bignum_div(const bignum *dividend, const bignum *divisor,
 
 	// assert divisor_order != 0
 
+	bignum_zeroout(quotient);
+
 	// is the dividend has less digits than the dividend, we can just skip
 	// the whole math
 	if (dividend_order < divisor_order) {
 		bignum_copy(remainder, dividend);
-		bignum_zeroout(quotient);
 		return;
 	}
 
@@ -230,16 +232,17 @@ void bignum_div(const bignum *dividend, const bignum *divisor,
 			} else if (diff > 0) {
 				high = d->digits[0] - 1;
 			} else { break; }
+
+			if (low == ~0) break; // look i'm too lazy to think about how to fix the binary search
 		}
 
-		// todo do stuff with the low / high
-		// and also update quotient
+		// d might be wrong, TODO have a big fat think about this
 		d->digits[0] = high;
+		quotient->digits[dividend_order - divisor_order - i] = d->digits[0];
 
-		// remainder = dividend - d * divisor
-		bignum_copy(remainder, dividend);
+		// remainder = intermediate - d * divisor
+		bignum_copy(remainder, intermediate);
 		bignum_mul(multiple, d, divisor);
-		bignum_print(multiple);
 		bignum_sub(remainder, remainder, multiple);
 	}
 
