@@ -17,6 +17,9 @@ void bignum_sub(bignum *result, const bignum *a, const bignum *b);
 uint16_t bignum_order(const bignum *bn);
 uint64_t bignum_log2(const bignum *bn);
 
+void bignum_modexp_timingsafe(bignum *result, const bignum *base,
+							  const bignum *power, const bignum *modulus);
+
 // returns -1 if a < b
 //          0 if a = b
 //          1 if a > b

@@ -11,11 +11,8 @@ static void bignum_zeroout(bignum *a) {
 	}
 }
 
-bignum* bignum_new(uint16_t bytes) {  
-	int size = bytes / sizeof(uint64_t);
-	if (bytes % sizeof(uint64_t))
-		size += sizeof(uint64_t);
-
+// the size is in an amount of uint64_t, each one is 8 bytes
+bignum* bignum_new(uint16_t size) {  
 	bignum *b = malloc(sizeof(bignum) + size * sizeof(uint64_t));
 	b->length = size;
 	bignum_zeroout(b);
@@ -117,6 +114,54 @@ uint64_t bignum_log2(const bignum *bn) {
 	return bits;
 }
 
+// slower that regular modexp, but more secure against timing attacks
+// https://en.wikipedia.org/wiki/Exponentiation_by_squaring#Montgomery's_ladder_technique
+void bignum_modexp_timingsafe(bignum *result, const bignum *base,
+							  const bignum *power, const bignum *modulus) {
+	uint16_t order1 = bignum_order(base),
+	         order2 = bignum_order(modulus);
+	// order2 is the max
+	if (order1 < order2) order1 = order2;
+	order1 *= sizeof(uint64_t);
+	order1  = order1 * order1 + 1;
+
+	bignum *x1 = bignum_new(order1);
+	bignum_copy(x1, base);
+	bignum *x2 = bignum_new(order1);
+	bignum_mul(x2, base, base);
+
+	bignum *x3 = bignum_new(order1); // temporary var
+
+	uint64_t bits = bignum_log2(power);
+	for (int i = bits - 2; i >= 0; i--) {
+		uint64_t bit = power->digits[i / 64]
+		             | (1 << (i % 64));
+
+		// x3 = x1 * x2
+		bignum_mul(x3, x1, x2);
+		if (bit == 0) {
+			// x2 = x2 % modules
+			bignum_div(x3, modulus, NULL, x2);
+			bignum_mul(x3, x1, x1);
+			// x1 = x1 % modules
+			bignum_div(x3, modulus, NULL, x1);
+
+		} else {
+			// x1 = x1 % modules
+			bignum_div(x3, modulus, NULL, x1);
+			bignum_mul(x3, x2, x2);
+			// x2 = x2 % modules
+			bignum_div(x3, modulus, NULL, x2);
+		}
+	}
+
+	bignum_copy(result, x1);
+
+	free(x1);
+	free(x2);
+	free(x3);
+}
+
 void bignum_sub(bignum *result, const bignum *a, const bignum *b) {
 	int length = result->length;
 	if (a->length < length) length = a->length;
@@ -181,6 +226,7 @@ void bignum_mul(bignum *result, const bignum *a, const bignum *b) {
 	for (uint16_t i = 0; i < a->length; i++) {
 		if (a->digits[i] == 0) continue;
 		for (uint16_t j = 0; j+i < length; j++) { // potential overflow
+			if (j >= b->length) break; // TODO
 			if (b->digits[j] == 0) continue;
 			__int128 product = (__int128)(a->digits[i]) * (__int128)(b->digits[j]);
 			uint64_t low  = product >> 64;
@@ -196,7 +242,7 @@ void bignum_mul(bignum *result, const bignum *a, const bignum *b) {
 // i'm ripping this algorithm off a youtube video
 // shoutouts to the author
 //
-// this has overflows all over the place
+// the quotient is optional
 void bignum_div(const bignum *dividend, const bignum *divisor,
 		bignum *quotient, bignum *remainder) {
 
@@ -205,7 +251,8 @@ void bignum_div(const bignum *dividend, const bignum *divisor,
 
 	// assert divisor_order != 0
 
-	bignum_zeroout(quotient);
+	if (quotient != NULL)
+		bignum_zeroout(quotient);
 
 	// is the dividend has less digits than the dividend, we can just skip
 	// the whole math
@@ -251,12 +298,13 @@ void bignum_div(const bignum *dividend, const bignum *divisor,
 				high = d->digits[0] - 1;
 			} else { break; }
 
-			if (low == ~0) break; // look i'm too lazy to think about how to fix the binary search
+			if (low == ~0ull) break; // look i'm too lazy to think about how to fix the binary search
 		}
 
 		// d might be wrong, TODO have a big fat think about this
 		d->digits[0] = high;
-		quotient->digits[dividend_order - divisor_order - i] = d->digits[0];
+		if (quotient != NULL)
+			quotient->digits[dividend_order - divisor_order - i] = d->digits[0];
 
 		// remainder = intermediate - d * divisor
 		bignum_copy(remainder, intermediate);
