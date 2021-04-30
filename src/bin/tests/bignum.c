@@ -31,6 +31,9 @@ bool test_bignum() {
 	bignum_print(c); // should be 122358e1b41b67a99bce7bebbf2c38b0df58491eb2ce805d9
 	puts("remainder:");
 	bignum_print(d); // should be 123ab0d0855e7b3f99f82b49f993a86bd76a23afea4ff3
+
+	uint64_t bits = bignum_log2(c);
+	printf("the division result consists of %d bits\n", bits); // TODO uint64 support
 	
 	free(a);
 	free(asqr);

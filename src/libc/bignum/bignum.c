@@ -91,12 +91,30 @@ static inline void bignum_addat(bignum *target, uint16_t pos, uint64_t to_add) {
 //     0 < x < 2**64   = 1
 // 2**64 < x < 2**128  = 2
 // etc
-static inline uint16_t bignum_order(const bignum *bn) {
+uint16_t bignum_order(const bignum *bn) {
 	for (int i = bn->length - 1; i >= 0; i--) {
 		if (bn->digits[i] != 0)
 			return i + 1;
 	}
 	return 0;
+}
+
+uint64_t bignum_log2(const bignum *bn) {
+	uint16_t order = bignum_order(bn);
+	if (order == 0) return 0;
+
+	uint64_t digit = bn->digits[order - 1];
+	uint64_t bits = order * sizeof(uint64_t) * 8;
+
+	// we know that digit must not equal 0
+	// TODO add an assert
+	uint64_t mask = ~(~0ull >> 1); // most significant bit
+	while (!(digit & mask)) {
+		bits--;
+		digit <<= 1;
+	}
+
+	return bits;
 }
 
 void bignum_sub(bignum *result, const bignum *a, const bignum *b) {
