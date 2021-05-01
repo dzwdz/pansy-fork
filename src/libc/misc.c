@@ -37,10 +37,19 @@ int printf(const char *fmt, ...) {
             write(1, sub, fmt - sub - 1);
             total += fmt - sub - 1;
 
+        percent_found:
             c = *fmt++;
             switch (c) {
             case 's': {
-                const char *s = va_arg(argp, char*); 
+                const char *s = va_arg(argp, char*);
+
+                // print leading zeros
+                for (int k = leading_zeros - strlen(s); k > 0; k--) {
+                    char a = ' ';
+                    write(1, &a, 1);
+                }
+                leading_zeros = 0;
+
                 write(1, s, strlen(s));
                 break;}
             case 'c': {
@@ -66,9 +75,8 @@ int printf(const char *fmt, ...) {
             case '0': {
                 leading_zeros = *fmt - '0';
                 fmt++;
-                fmt++;
-            }
-                /* fallthrough! */
+                goto percent_found;
+                break;}
             case 'd': {
                 char c;
                 int n = va_arg(argp, int);
@@ -98,14 +106,13 @@ int printf(const char *fmt, ...) {
                     c = '0';
                     write(1, &c, 1);
                 }
+                leading_zeros = 0;
 
                 // that previous string is reversed, so we print it backwards
                 for (int k = strlen(to_print); k > 0; k--) {
                     c = to_print[k - 1];
                     write(1, &c, 1);
                 }
-
-                leading_zeros = 0;
 
                 break;}
             }
