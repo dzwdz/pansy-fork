@@ -135,7 +135,7 @@ void bignum_modexp_timingsafe(bignum *result, const bignum *base,
 	uint64_t bits = bignum_log2(power);
 	for (int i = bits - 2; i >= 0; i--) {
 		uint64_t bit = power->digits[i / 64]
-		             | (1 << (i % 64));
+		             & (1ull << (i % 64));
 
 		// x3 = x1 * x2
 		bignum_mul(x3, x1, x2);
