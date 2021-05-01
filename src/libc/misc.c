@@ -29,6 +29,7 @@ int printf(const char *fmt, ...) {
     va_list argp;
     va_start(argp, fmt);
 
+    int leading_zeros = 0;
     while (1) {
         char c = *fmt++;
         switch (c) {
@@ -62,6 +63,12 @@ int printf(const char *fmt, ...) {
                 }
 
                 break;}
+            case '0': {
+                leading_zeros = *fmt - '0';
+                fmt++;
+                fmt++;
+            }
+                /* fallthrough! */
             case 'd': {
                 char c;
                 int n = va_arg(argp, int);
@@ -86,11 +93,19 @@ int printf(const char *fmt, ...) {
                     n /= 10;
                 }
 
+                // print leading zeros
+                for (int k = leading_zeros - strlen(to_print); k > 0; k--) {
+                    c = '0';
+                    write(1, &c, 1);
+                }
+
                 // that previous string is reversed, so we print it backwards
                 for (int k = strlen(to_print); k > 0; k--) {
                     c = to_print[k - 1];
                     write(1, &c, 1);
                 }
+
+                leading_zeros = 0;
 
                 break;}
             }
