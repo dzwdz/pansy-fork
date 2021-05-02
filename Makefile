@@ -62,6 +62,9 @@ M := $(shell find . -type d | grep src/bin/)
 nested:
 	@for dir in $(M); do \
 		DIR=$$dir $(MAKE) -f Cursedfile --no-print-directory; \
+		if ! [ 0 -eq $$? ]; then \
+			exit 1; \
+		fi; \
 	done
 
 
