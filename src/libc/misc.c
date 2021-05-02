@@ -29,26 +29,26 @@ int printf(const char *fmt, ...) {
     va_list argp;
     va_start(argp, fmt);
 
-    int leading_zeros = 0;
     while (1) {
+        int target_len = 0;
+
         char c = *fmt++;
         switch (c) {
         case '%':
             write(1, sub, fmt - sub - 1);
             total += fmt - sub - 1;
 
-        percent_found:
+parse_fmt:
             c = *fmt++;
             switch (c) {
             case 's': {
                 const char *s = va_arg(argp, char*);
 
                 // print leading zeros
-                for (int k = leading_zeros - strlen(s); k > 0; k--) {
+                for (int k = target_len - strlen(s); k > 0; k--) {
                     char a = ' ';
                     write(1, &a, 1);
                 }
-                leading_zeros = 0;
 
                 write(1, s, strlen(s));
                 break;}
@@ -62,8 +62,8 @@ int printf(const char *fmt, ...) {
                 int i = 0;
                 while (num >> i && i < (sizeof(int) * 8)) i += 4;
                 if (i == 0) i = 4;
+                if (target_len * 4 > i) i = target_len * 4;
 
-                write(1, "0x", 2);
                 while (i > 0) {
                     i -= 4;
                     char c = '0' + ((num >> i) & 0xf);
@@ -73,28 +73,22 @@ int printf(const char *fmt, ...) {
 
                 break;}
             case '0': {
-                leading_zeros = *fmt - '0';
-                fmt++;
-                goto percent_found;
-                break;}
+                target_len = *fmt++ - '0';
+                goto parse_fmt;}
             case 'd': {
                 char c;
                 int n = va_arg(argp, int);
 
-                // special case for when the number is zero
-                if (n == 0) {
-                    c = '0';
-                    write(1, &c, 1);
-                    break;
-                }
-                else if (n < 0) {
+                if (n < 0) {
                     c = '-';
                     write(1, &c, 1);
                     n = -n;
+                    if (target_len > 0) target_len--;
                 }
 
                 // write to string
                 char to_print[10] = {0};
+                to_print[0] = '0'; // special case for n == 0
                 int i = 0;
                 while (n != 0) {
                     to_print[i++] = (n % 10) + '0';
@@ -102,11 +96,10 @@ int printf(const char *fmt, ...) {
                 }
 
                 // print leading zeros
-                for (int k = leading_zeros - strlen(to_print); k > 0; k--) {
+                for (int k = target_len - strlen(to_print); k > 0; k--) {
                     c = '0';
                     write(1, &c, 1);
                 }
-                leading_zeros = 0;
 
                 // that previous string is reversed, so we print it backwards
                 for (int k = strlen(to_print); k > 0; k--) {
