@@ -15,9 +15,9 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include "fs.h"
-#include "tty.h"
-#include "utility.h"
+#include <fs.h>
+#include <tty.h>
+#include <utility.h>
 
 #define MAX_LEN 256
 #define STACK_SIZE 300

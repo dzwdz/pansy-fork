@@ -1,5 +1,5 @@
-#include "fs.h"
-#include "tty.h"
+#include <fs.h>
+#include <tty.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
