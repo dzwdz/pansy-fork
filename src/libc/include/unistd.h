@@ -1,5 +1,4 @@
-#ifndef UNISTD_H
-#define UNISTD_H
+#pragma once
 
 #include <stddef.h>
 #include <sys/types.h>
@@ -36,5 +35,3 @@ int rmdir(const char *pathname);
 int chdir(const char *path);
 // might be in the wrong header
 int mknod(const char *pathname, mode_t mode, dev_t dev);
-
-#endif /* UNISTD_H */

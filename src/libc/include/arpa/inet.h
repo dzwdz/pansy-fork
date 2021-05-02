@@ -1,5 +1,4 @@
-#ifndef ARPA_INET_H
-#define ARPA_INET_H
+#pragma once
 
 #include <stdint.h>
 
@@ -8,5 +7,3 @@ uint16_t htons(uint16_t hostshort);
 
 uint32_t ntohl(uint32_t netlong);
 uint16_t ntohs(uint16_t netshort);
-
-#endif /* ARPA_INET_H */

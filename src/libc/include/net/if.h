@@ -1,5 +1,4 @@
-#ifndef NET_IF_H
-#define NET_IF_H
+#pragma once
 
 #include <sys/socket.h>
 
@@ -70,5 +69,3 @@ struct ifreq {
 #define ifr_bandwidth  ifr_ifru.ifru_ivalue
 #define ifr_qlen       ifr_ifru.ifru_ivalue
 #define ifr_newname    ifr_ifru.ifru_newname
-
-#endif /* NET_IF_H */

@@ -1,5 +1,4 @@
-#ifndef SYS_SOCKET_H
-#define SYS_SOCKET_H
+#pragma once
 
 #include <stdint.h>
 #include <stddef.h>
@@ -42,5 +41,3 @@ int listen(int sockfd, int backlog);
 int accept(int sockfd, struct sockaddr *restrict addr, socklen_t *restrict addrlen);
 ssize_t recv(int sockfd, void *buf, size_t len, int flags);
 ssize_t send(int sockfd, const void *buf, size_t len, int flags);
-
-#endif /* SYS_SOCKET_H */

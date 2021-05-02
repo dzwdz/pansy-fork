@@ -1,5 +1,4 @@
-#ifndef SYS_SYSCALL_H
-#define SYS_SYSCALL_H
+#pragma once
 
 long syscall(long number, ...);
 
@@ -356,5 +355,3 @@ long syscall(long number, ...);
 #define SYS_pidfd_getfd 438
 #define SYS_faccessat2 439
 #define SYS_process_madvise 440
-
-#endif /* SYSCALL_H */

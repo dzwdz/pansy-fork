@@ -1,5 +1,4 @@
-#ifndef SYS_IOCTL_H
-#define SYS_IOCTL_H
+#pragma once
 
 #define SIOCADDRT          0x890B
 #define SIOCDELRT          0x890C
@@ -66,5 +65,3 @@
 
 
 int ioctl(int fd, unsigned long request, ...);
-
-#endif /* SYS_IOCTL_H */

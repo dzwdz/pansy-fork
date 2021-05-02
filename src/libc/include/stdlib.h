@@ -1,5 +1,4 @@
-#ifndef STDLIB_H
-#define STDLIB_H
+#pragma once
 
 #include <stddef.h>
 
@@ -9,5 +8,3 @@ void free(void *ptr);
 int atoi(const char *str);
 
 void exit(int status);
-
-#endif /* STDLIB_H */

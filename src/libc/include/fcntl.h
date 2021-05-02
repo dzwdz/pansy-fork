@@ -1,5 +1,4 @@
-#ifndef FCNTL_H
-#define FCNTL_H
+#pragma once
 
 /* apparently, fcntl.h includes sys/stat.h ??? */
 #include <sys/stat.h>
@@ -22,5 +21,3 @@
 
 int open(const char *pathname, int flags, ...);
 int creat(const char *pathname, mode_t mode);
-
-#endif /* FCNTL_H */

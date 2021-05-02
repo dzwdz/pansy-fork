@@ -1,5 +1,4 @@
-#ifndef STDINT_H
-#define STDINT_H
+#pragma once
 
 #define UINT64_MAX -1
 
@@ -11,5 +10,3 @@ typedef int int32_t;
 typedef unsigned int uint32_t;
 typedef long int64_t;
 typedef unsigned long uint64_t;
-
-#endif /* STDINT_H */

@@ -1,5 +1,4 @@
-#ifndef SYS_STAT_H
-#define SYS_STAT_H
+#pragma once
 
 #include <time.h> /* timespec */
 #include <sys/types.h>
@@ -46,5 +45,3 @@ int stat(const char *restrict pathname, struct stat *restrict statbuf);
 int fstat(int fd, struct stat *statbuf);
 int lstat(const char *restrict path, struct stat *restrict buf);
 int mkdir(const char *pathname, mode_t mode);
-
-#endif /* SYS_STAT_H */

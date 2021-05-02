@@ -1,5 +1,4 @@
-#ifndef SYS_TYPES_H
-#define SYS_TYPES_H
+#pragma once
 
 #include <stdint.h>
 
@@ -20,5 +19,3 @@ typedef uquad_t ino_t;
 typedef quad_t off_t;
 typedef quad_t blksize_t;
 typedef quad_t blkcnt_t;
-
-#endif /* SYS_TYPES_H */
