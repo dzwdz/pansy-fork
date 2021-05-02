@@ -14,8 +14,10 @@ void cat(int fd) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc < 2)
+    if (argc < 2) {
+        cat(STDIN_FILENO);
         return 1;
+    }
     argv++; // we don't care about program name
 
     for (; *argv != NULL; argv++) {

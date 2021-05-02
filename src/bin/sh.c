@@ -1,4 +1,4 @@
-#include "tty.h"
+#include <tty.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,6 +6,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 #include <unistd.h>
 
 #define MAX_LEN 256
@@ -100,35 +101,86 @@ bool find_file(char* path) {
 }
 
 int run(char** args) {
-    // some builtins
-    if (!strcmp(args[0], "exit"))
+    /* builtins */
+    if (!strcmp(args[0], "exit")) {
+        free(args);
         exit(0);
+    }
 
     if (!strcmp(args[0], "cd")) {
         chdir(args[1]);
         return 0;
     }
 
+    /* redirection stuff ahead */
+    int save_out = dup(STDOUT_FILENO);
+    int save_in = dup(STDIN_FILENO);
+
+    int out = STDOUT_FILENO;
+    int in = STDIN_FILENO;
+
+    for (size_t i = 0; args[i] != NULL; i++) {
+        if (args[i][0] == '>') {
+            if (args[i+1] == NULL && strlen(args[i]) == 1) {
+                puts("pansh: syntax error: unexpected newline");
+                close(save_out);
+                close(save_in);
+                return 1;
+            } else {
+                /* we assume it's written `cmd >out` */
+                char *filename = &args[i][1];
+                /* if it's written `cmd > out`, fix the filename */
+                if (strlen(args[i]) == 1)
+                    filename = args[i+1];
+
+                creat(filename, 0666);
+                out = open(filename, O_WRONLY | O_TRUNC);
+                args[i] = NULL;
+                i++;
+            }
+        } else if (args[i][0] == '<') {
+            if (args[i+1] == NULL && strlen(args[i]) == 1) {
+                puts("pansh: syntax error: unexpected newline");
+                close(save_out);
+                close(save_in);
+                return 1;
+            } else {
+                char *filename = &args[i][1];
+                if (strlen(args[i]) == 1)
+                    filename = args[i+1];
+
+                in = open(filename, O_RDONLY);
+                args[i] = NULL;
+                i++;
+            }
+        }
+    }
+
     // the command isn't a builtin, try running an executable
-    char *path = malloc(MAX_LEN);
+    char path[MAX_LEN];
     strcpy(path, args[0]);
 
     if (!find_file(path)) {
         puts("file not found");
-        free(path);
         return 1;
     }
 
-    if (!fork()) {
-        execve(path, args, env);
-        puts("pansh: execve() error");
+    pid_t p = fork();
+
+    if (!p) {
+        dup2(out, STDOUT_FILENO);
+        dup2(in, STDIN_FILENO);
+        int err = execve(path, args, env);
+        printf("pansh: execve() error: %d\n", err);
+        return 1;
+    } else {
+        close(save_out);
+        close(save_in);
+
+        int status;
+        wait(&status);
+        return status;
     }
-
-    free(path);
-
-    int status;
-    wait(&status);
-    return status;
 }
 
 int main(int argc __attribute__((unused)),
@@ -137,7 +189,7 @@ int main(int argc __attribute__((unused)),
 
     env = envp;
 
-    char *buf = malloc(MAX_LEN);
+    char buf[MAX_LEN];
 
     while (1) {
         getcwd(buf, MAX_LEN);
@@ -149,6 +201,7 @@ int main(int argc __attribute__((unused)),
 
         char** args = split_args(buf);
         run(args);
+        free(args);
     }
 
     return 0;

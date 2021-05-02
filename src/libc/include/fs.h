@@ -1,5 +1,5 @@
-#include <stdbool.h>
 #pragma once
+#include <stdbool.h>
 
 // copied from the man getdents(2)
 struct dirent {

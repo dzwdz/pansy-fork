@@ -1,4 +1,4 @@
-#include "fs.h"
+#include <fs.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <stdio.h>
@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 // allocates a new string
-char* lookup_user(int uid, int gid) {
+char* lookup_user(uid_t uid, gid_t gid) {
     DIR *dirp = opendir("/Users");
     
     if (!dirp) {
@@ -29,8 +29,8 @@ char* lookup_user(int uid, int gid) {
             return NULL;
         }
         
-        if (uid >= 0 && uid != statbuf.st_uid) continue;
-        if (gid >= 0 && gid != statbuf.st_gid) continue;
+        if (uid != statbuf.st_uid) continue;
+        if (gid != statbuf.st_gid) continue;
 
         if (!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, "..")) continue;
         

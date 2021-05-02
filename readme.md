@@ -1,20 +1,21 @@
 pansy linux
 ===========
-this is a linux distribution made fully from scratch - that is, i'm writing
+this is a linux distribution made fully from scratch - that is, we're writing
 everything other than the kernel itself by hand.
 
 running / building
 ------------------
-you need to manually supply two files - deps/vmlinuz and deps/e1000.ko
+before building, you'll need to manually supply those two files:
 * deps/vmlinuz - the kernel, you'll probably find one in `/boot`
 * deps/e1000.ko - the ethernet driver, look for it in `/lib/modules/*/kernel/drivers/net/ethernet/intel/e1000/`
 
+then you can just run `make boot` to get dropped into QEMU. you can press C-a x to exit the vm.
+you can login as the root user - `root:password`
 
 resources
 ---------
 http://tilde.town/~elly/userland.txt
-
-https://m47r1x.github.io/posts/linux-boot/
+also, the earlier commits have the resources used in their full messages
 
 todo list
 ---------
