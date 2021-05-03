@@ -6,6 +6,8 @@
  * at it first
  */
 
+#include "conn.h"
+#include "proto.h"
 #include <arpa/inet.h>
 #include <macros.h>
 #include <stdio.h>
@@ -14,29 +16,21 @@
 #include <tty.h>
 #include <unistd.h>
 
-const char *server_id = "SSH-2.0-pansy";
+const char *SERVER_ID = "SSH-2.0-pansy";
 
 void handle_client(int fd) {
-    char *buf = malloc(2048);
+    connection conn;
+    conn.fd = fd;
+    conn.sbuf = malloc(2048);
 
-    { // ID exchange
-        int bytes = recv(fd, buf, 1024, 0);
-        if (bytes <= 0) return; // note: i don't care about freeing buf as
-                                // this process will quit right after this return
+    id_exchange(&conn);
+    // gcc is dumb and it complains that client_id isn't initialized
+    // it is
+    printf("new connection from %s\n", conn.client_id);
 
-        // TODO this is not spec compliant
-        // we find the first \r - it *should* be right after the client id
-        int cid_len = 0;
-        for (; cid_len < bytes; cid_len++) {
-            if (buf[cid_len] == '\r') {
-                buf[cid_len] = '\0';
-                break;
-            }
-        }
-        if (cid_len == bytes) return; // no \r found
-
-        printf("new connection from %s\n", buf);
-    }
+    free(conn.sbuf);
+    // fd gets closed by server_loop
+    // not that it matters, as it exits right after
 }
 
 // listens on the given port
