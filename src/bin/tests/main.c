@@ -4,6 +4,9 @@
 // malloc.c
 bool test_malloc();
 
+// printf.c
+bool test_sprintf();
+
 
 // test runners are supposed to return true on success, false on failure
 struct test_runner {
@@ -13,6 +16,7 @@ struct test_runner {
 
 struct test_runner runners[] = {
 	{"malloc", &test_malloc},
+    {"sprintf", &test_sprintf},
 	{NULL, NULL}
 };
 

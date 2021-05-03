@@ -7,6 +7,7 @@
 
 union writer_arg {
     int fd;
+    char *out_str;
 };
 
 typedef void (*writer_t)(union writer_arg, const char*, size_t);
@@ -117,6 +118,12 @@ static void file_writer(union writer_arg warg, const char *buf, size_t len) {
     write(warg.fd, buf, len);
 }
 
+static void string_writer(union writer_arg warg, const char *buf, size_t len) {
+    static size_t pos = 0;
+    for (size_t i = 0; i < len; i++)
+        warg.out_str[pos++] = buf[i];
+    if (*buf == '\0') pos = 0;
+}
 
 int printf(const char *fmt, ...) {
     va_list argp;
@@ -135,6 +142,17 @@ int dprintf(int fd, const char *fmt, ...) {
 
     va_start(argp, fmt);
     int printed = __vprintf_internal(file_writer, warg, fmt, argp);
+    va_end(argp);
+
+    return printed;
+}
+
+int sprintf(char *out_str, const char *fmt, ...) {
+    va_list argp;
+    union writer_arg warg = {.out_str = out_str};
+
+    va_start(argp, fmt);
+    int printed = __vprintf_internal(string_writer, warg, fmt, argp);
     va_end(argp);
 
     return printed;
