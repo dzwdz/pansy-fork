@@ -24,8 +24,6 @@ void handle_client(int fd) {
     conn.sbuf = malloc(2048);
 
     id_exchange(&conn);
-    // gcc is dumb and it complains that client_id isn't initialized
-    // it is
     printf("new connection from %s\n", conn.client_id);
 
     free(conn.sbuf);
