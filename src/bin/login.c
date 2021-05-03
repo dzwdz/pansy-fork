@@ -1,11 +1,44 @@
-#include "fs.h"
-#include "tty.h"
+#include <fs.h>
+#include <tty.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+enum id_value {
+    UID,
+    GID
+};
+
+uid_t read_id(char *path, enum id_value id) {
+    int fd = open(path, O_RDONLY);
+
+    char buf[10] = {0};
+
+    char c;
+    unsigned int current_line = 0;
+    size_t i = 0;
+    bool finished = false;
+    while (!finished) {
+        read(fd, &c, 1);
+        if (current_line == id)
+            buf[i++] = c;
+        if (c == '\n') {
+            if (current_line == id)
+                finished = true;
+            else
+                current_line++;
+        }
+    };
+
+    // remove the newline
+    buf[i-1] = '\0';
+
+    close(fd);
+    return atoi(buf);
+}
 
 int main() {
     puts("\e[2J\033[H~ pansy linux ~");
@@ -14,10 +47,12 @@ int main() {
     strcpy(userbuf, "/Users/");
     char *passbuf = malloc(256);
     char *bonusbuf = malloc(256);
+    char username[128] = {0}; // used later for uid checking
 
     while (1) {
         printf("login: ");
-        readline(userbuf + 7, 128);
+        readline(username, 128);
+        strcpy(userbuf + 7, username);
 
         if (!is_path_safe(userbuf)) {
             puts("illegal username");
@@ -69,9 +104,14 @@ int main() {
             }
         }
 
+        char uid_path[256];
+        sprintf(uid_path, "/Users/%s/uid", username);
+        uid_t uid = read_id(uid_path, UID);
+        gid_t gid = read_id(uid_path, GID);
+
         // change the uid
-        setreuid(sb.st_uid, sb.st_uid);
-        setregid(sb.st_gid, sb.st_gid);
+        setreuid(uid, uid);
+        setregid(gid, gid);
 
         // exec shell
         char *const sh[] = {"/bin/sh", NULL};
