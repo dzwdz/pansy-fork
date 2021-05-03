@@ -3,10 +3,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define SBUF_SIZE 4096
+
 typedef struct {
     int fd;
-    char *sbuf; // 2048 bytes in size, no guarantees about what's in it
-                // i'm just using it to avoid constant mallocs
+    char *sbuf;
 
     // id_exchange
     char *client_id;

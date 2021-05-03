@@ -16,7 +16,7 @@
 #include <tty.h>
 
 void id_exchange(connection *conn) {
-    int bytes = recv(conn->fd, conn->sbuf, 2048, 0);
+    int bytes = recv(conn->fd, conn->sbuf, SBUF_SIZE, 0);
     if (bytes <= 0) ssh_fatal(conn);
 
     // TODO this is not spec compliant

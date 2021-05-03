@@ -21,7 +21,7 @@ const char *SERVER_ID = "SSH-2.0-pansy";
 void handle_client(int fd) {
     connection conn;
     conn.fd = fd;
-    conn.sbuf = malloc(2048);
+    conn.sbuf = malloc(SBUF_SIZE);
 
     id_exchange(&conn);
     printf("new connection from %s\n", conn.client_id);
@@ -46,7 +46,8 @@ void server_loop(unsigned short port) {
 
     if (bind(sockfd, (void*)&my_addr, sizeof my_addr) == -1)
         DIE("couldn't bind socket", 1);
-    if (listen(sockfd, 10) == -1) DIE("couldn't listen to the socket", 1);
+    if (listen(sockfd, 10) == -1)
+        DIE("couldn't listen to the socket", 1);
 
     struct sockaddr_storage client_addr;
     socklen_t addr_size = sizeof client_addr;

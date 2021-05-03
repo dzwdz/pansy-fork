@@ -10,7 +10,7 @@
 // reads a single packet into conn.sbuf
 // RFC 4253 / 6.
 iter_t read_packet(connection *conn) {
-    ssize_t bytes = recv(conn->fd, conn->sbuf, 2048, 0);
+    ssize_t bytes = recv(conn->fd, conn->sbuf, SBUF_SIZE, 0);
     if (bytes < 5) ssh_fatal(conn);
 
     // the packet size is at the beginning of the buffer
