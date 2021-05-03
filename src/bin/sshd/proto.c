@@ -40,11 +40,50 @@ void id_exchange(connection *conn) {
 
 // RFC 4253 / 7.
 void algo_negotiation(connection *conn) {
-    iter_t packet = read_packet(conn);
+    iter_t client_payload, server_payload;
 
-    if (pop_byte(&packet) != SSH_MSG_KEXINIT) ssh_fatal(conn);
-    packet.pos += 16; // skip over the client cookie
+    { // c2s
+        iter_t packet = read_packet(conn);
 
-    iter_t kex_methods = pop_string(&packet);
-    hexdump(kex_methods.base, kex_methods.max);
+        if (pop_byte(&packet) != SSH_MSG_KEXINIT) ssh_fatal(conn);
+        packet.pos += 16; // skip over the client cookie
+
+        // we only support one algorithm for everything, so we just have to check
+        // if the client supports those too
+        if (!namelist_has(pop_string(&packet),
+                "diffie-hellman-group14-sha256") || // key exchange
+            !namelist_has(pop_string(&packet),
+                "ssh-rsa")                       || // server host key
+            !namelist_has(pop_string(&packet),
+                "aes256-ctr")                    || // c2s encryption
+            !namelist_has(pop_string(&packet),
+                "aes256-ctr")                    || // s2c encryption
+            !namelist_has(pop_string(&packet),
+                "hmac-sha2-256")                 || // c2s MAC
+            !namelist_has(pop_string(&packet),
+                "hmac-sha2-256")                 || // s2c MAC
+            !namelist_has(pop_string(&packet),
+                "none")                          || // c2s compression
+            !namelist_has(pop_string(&packet),
+                "none")                          ){ // s2c compression
+
+            ssh_fatal(conn);
+        }
+
+        // then the client includes the languages that it supports
+        // we don't give a fuck about those
+        pop_string(&packet);
+        pop_string(&packet);
+        
+        bool kex_follows = pop_byte(&packet);
+        if (kex_follows) {
+            puts("KEX follows and we don't support that yet"); // TODO like actually implement this or people will not be able to connect and you will spend ages figuring out why
+            // the ruby implementation crashed, but YOLO let's just see what happens
+        }
+        pop_uint32(&packet); // "reserved"
+
+        client_payload = iterator_copy(&packet);
+    }
+
+    hexdump(client_payload.base, client_payload.max);
 }

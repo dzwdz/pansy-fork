@@ -61,10 +61,11 @@ void server_loop(unsigned short port) {
             exit(0);
         } else {
             close(client_fd);
+            exit(0); // TODO this is convinent for debugging
         }
     }
 }
 
 int main() {
-    server_loop(2022);
+    server_loop(2020);
 }
