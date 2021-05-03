@@ -1,4 +1,6 @@
 #pragma once
+#include "misc.h"
+#include <stdint.h>
 
 typedef struct {
     int fd;
@@ -8,5 +10,10 @@ typedef struct {
     // id_exchange
     char *client_id;
 } connection;
+
+iter_t read_packet(connection *conn);
+uint8_t pop_byte(iter_t *iter);
+uint32_t pop_uint32(iter_t *iter);
+iter_t pop_string(iter_t *iter);
 
 void ssh_fatal(connection *conn);

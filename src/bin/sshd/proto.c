@@ -1,12 +1,11 @@
 /*
  * here are the functions that handle the "higher-level" parts of the SSH
  * protocol
- *
- * and some helper ones too, such as ssh_fatal, which will be moved to conn->c
- * someday
  */
 
 #include "conn.h"
+#include "magics.h"
+#include "misc.h"
 #include "proto.h"
 #include <stdio.h>
 #include <string.h>
@@ -14,8 +13,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <tty.h>
+
 void id_exchange(connection *conn) {
-    int bytes = recv(conn->fd, conn->sbuf, 1024, 0);
+    int bytes = recv(conn->fd, conn->sbuf, 2048, 0);
     if (bytes <= 0) ssh_fatal(conn);
 
     // TODO this is not spec compliant
@@ -37,9 +38,13 @@ void id_exchange(connection *conn) {
     dprintf(conn->fd, "%s\r\n", SERVER_ID);
 }
 
-void ssh_fatal(connection *conn) {
-    puts("closing connection due to some fatal error");
-    close(conn->fd);
-    free(conn->sbuf);
-    exit(1);
+// RFC 4253 / 7.
+void algo_negotiation(connection *conn) {
+    iter_t packet = read_packet(conn);
+
+    if (pop_byte(&packet) != SSH_MSG_KEXINIT) ssh_fatal(conn);
+    packet.pos += 16; // skip over the client cookie
+
+    iter_t kex_methods = pop_string(&packet);
+    hexdump(kex_methods.base, kex_methods.max);
 }

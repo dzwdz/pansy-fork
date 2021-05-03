@@ -43,3 +43,10 @@ ssize_t recv(int sockfd, void *buf, size_t len, int flags) {
 uint16_t htons(uint16_t hosts) {
     return hosts << 8 | hosts >> 8;
 }
+
+uint32_t ntohl(uint32_t netl) {
+    return (0x000000FF & (netl >> 24))
+         | (0x0000FF00 & (netl >>  8))
+         | (0x00FF0000 & (netl <<  8))
+         | (0xFF000000 & (netl << 24));
+}

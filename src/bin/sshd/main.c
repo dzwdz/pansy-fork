@@ -26,6 +26,8 @@ void handle_client(int fd) {
     id_exchange(&conn);
     printf("new connection from %s\n", conn.client_id);
 
+    algo_negotiation(&conn);
+
     free(conn.sbuf);
     // fd gets closed by server_loop
     // not that it matters, as it exits right after
@@ -64,5 +66,5 @@ void server_loop(unsigned short port) {
 }
 
 int main() {
-    server_loop(2020);
+    server_loop(2022);
 }
