@@ -4,6 +4,7 @@
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/sysinfo.h>
 #include <unistd.h>
 
 // todo unmess the syscalls
@@ -74,4 +75,8 @@ int dup2(int oldfd, int newfd) {
 
 off_t lseek(int fd, off_t offset, int whence) {
     return syscall(SYS_lseek, fd, offset, whence);
+}
+
+int sysinfo(struct sysinfo *info) {
+    return syscall(SYS_sysinfo, info);
 }

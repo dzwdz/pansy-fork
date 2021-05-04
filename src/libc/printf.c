@@ -21,6 +21,7 @@ static int __vprintf_internal(writer_t writer, union writer_arg warg,
 
     while (1) {
         unsigned int target_len = 0;
+        bool long_option = false;
 
         char c = *fmt++;
         switch (c) {
@@ -68,9 +69,21 @@ parse_fmt:
                 }
 
                 break;}
+            case 'l': {
+                // yeah yeah it's not good, but it works for now (doesn't handle ll)
+                long_option = true;
+                goto parse_fmt;
+            }
             case 'd': {
                 char c;
-                int n = va_arg(argp, int);
+                /* ints can be converted to longs losslessly */
+                long n;
+                if (long_option) {
+                    long_option = false;
+                    n = va_arg(argp, long);
+                } else {
+                    n = va_arg(argp, int);
+                }
 
                 if (n < 0) {
                     c = '-';
@@ -80,7 +93,7 @@ parse_fmt:
                 }
 
                 // write to string
-                char to_print[10] = {0};
+                char to_print[25] = {0};
                 to_print[0] = '0'; // special case for n == 0
                 int i = 0;
                 while (n != 0) {
