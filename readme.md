@@ -3,6 +3,8 @@ pansy linux
 this is a linux distribution made fully from scratch - that is, we're writing
 everything other than the kernel itself by hand.
 
+we're hanging out on #homegrown at [irc.tilde.chat](https://tilde.chat/) - come say hi!
+
 running / building
 ------------------
 before building, you'll need to manually supply those two files:
