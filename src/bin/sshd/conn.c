@@ -31,6 +31,36 @@ iter_t read_packet(connection *conn) {
     return iter;
 }
 
+// starts preparing a packet
+iter_t start_packet(connection *conn) {
+    iter_t iter;
+    iter.base = conn->sbuf + 5;
+    iter.max = SBUF_SIZE - 5 - 16;
+    iter.pos = 0;
+    return iter;
+}
+
+// makes some assumptions about the packet iterator
+// so it must be used with the one returned by start_packet
+void send_packet(connection *conn, iter_t packet) {
+    // assert packet.base == conn->sbuf + 5;
+    uint8_t  padding_l = 0x1B - (packet.pos & 0xf);
+    uint32_t packet_l  = packet.pos + padding_l + 1;
+
+    // make the iterator span the whole packet
+    packet.base -= 5;
+    packet.pos += 5 + padding_l;
+    packet.max = SBUF_SIZE;
+
+    int og_pos = packet.pos; // dumb hack
+    packet.pos = 0;
+    push_uint32(&packet, packet_l);
+    push_byte(&packet, padding_l);
+    packet.pos = og_pos; // useless
+
+    send(conn->fd, packet.base, og_pos, 0);
+}
+
 
 // RFC 4251 / 5.
 uint8_t pop_byte(iter_t *iter) {
@@ -50,6 +80,31 @@ iter_t pop_string(iter_t *iter) {
     str.pos = 0;
     iter->pos += str.max;
     return str;
+}
+
+void push_byte(iter_t *iter, uint8_t val) {
+    iter->base[iter->pos] = val;
+    if ((iter->pos += 1) > iter->max) exit(1);
+}
+
+void push_uint32(iter_t *iter, uint32_t val) {
+    val = htonl(val);
+    memcpy(iter->base + iter->pos, &val, 4);
+    if ((iter->pos += 4) > iter->max) exit(1);
+}
+
+void push_string(iter_t *iter, void *buf, uint32_t size) {
+    push_uint32(iter, size);
+    memcpy(iter->base + iter->pos, buf, size);
+    if ((iter->pos += size) > iter->max) exit(1);
+}
+
+// doesn't include the null byte
+void push_cstring(iter_t *iter, const char *str) {
+    uint32_t size = strlen(str);;
+    push_uint32(iter, size);
+    memcpy(iter->base + iter->pos, str, size);
+    if ((iter->pos += size) > iter->max) exit(1);
 }
 
 

@@ -34,8 +34,13 @@ void id_exchange(connection *conn) {
     conn->client_id = malloc(cid_len + 1);
     memcpy(conn->client_id, conn->sbuf, cid_len + 1);
 
-    // and send ours (this is ugly but it works sooo..)
-    dprintf(conn->fd, "%s\r\n", SERVER_ID);
+    // and send ours
+    int id_len = strlen(SERVER_ID);
+    memcpy(conn->sbuf, SERVER_ID, id_len);
+    conn->sbuf[id_len]     = '\r';
+    conn->sbuf[id_len + 1] = '\n';
+    if (send(conn->fd, conn->sbuf, id_len + 2, 0) == -1)
+        ssh_fatal(conn);
 }
 
 // RFC 4253 / 7.
@@ -84,6 +89,29 @@ void algo_negotiation(connection *conn) {
 
         client_payload = iterator_copy(&packet);
     }
+    { // s2c
+        iter_t packet = start_packet(conn);
 
-    hexdump(client_payload.base, client_payload.max);
+        push_byte(&packet, SSH_MSG_KEXINIT);
+        packet.pos += 16; // TODO insert a random cookie
+
+        // our algorithm preferences
+        push_cstring(&packet, "diffie-hellman-group14-sha256"); // key exchange
+        push_cstring(&packet, "ssh-rsa");                       // server host key
+        push_cstring(&packet, "aes256-ctr");                    // c2s encryption
+        push_cstring(&packet, "aes256-ctr");                    // s2c ^
+        push_cstring(&packet, "hmac-sha2-256");                 // c2s mac
+        push_cstring(&packet, "hmac-sha2-256");                 // s2c ^
+        push_cstring(&packet, "none");                          // c2s compression
+        push_cstring(&packet, "none");                          // s2c ^
+        push_cstring(&packet, "");                              // c2s languages
+        push_cstring(&packet, "");                              // s2c ^
+
+        push_byte   (&packet, 0); // no kex packet follows
+        push_uint32 (&packet, 0); // reserved
+
+        packet.max = packet.pos;
+        server_payload = iterator_copy(&packet);
+        send_packet(conn, packet);
+    }
 }
