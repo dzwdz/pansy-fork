@@ -7,6 +7,9 @@ bool test_malloc();
 // bignums.c
 bool test_bignum();
 
+// hashes.c
+bool test_sha256();
+
 // test runners are supposed to return true on success, false on failure
 struct test_runner {
 	char *name;
@@ -15,7 +18,8 @@ struct test_runner {
 
 struct test_runner runners[] = {
 //	{"malloc", &test_malloc},
-	{"bignum", &test_bignum},
+//	{"bignum", &test_bignum},
+    {"sha256", &test_sha256},
 	{NULL, NULL}
 };
 
