@@ -82,3 +82,8 @@ src/libc/lowlevel.o: src/libc/lowlevel.s
 src/libc/%.o: src/libc/%.c
 	@${CC} ${CFLAGS} -c $^ -o $@
 
+
+### copy over documentation
+root/docs/%: docs/%
+	@mkdir -p $(@D)
+	@cp $< $@
