@@ -1,0 +1,34 @@
+docs - manual documents for the pansy linux system
+
+USAGE
+$ [ pager ] /docs/[ doc ].[ section ]
+
+DESCRIPTION
+The documents in the /docs directory describe the various parts of the
+pansy linux system. They are similar in nature to the man command
+commonly found on other Linux systems. The documents are divided into
+sections, as can be seen by the number used as a suffix in the
+filename. The sections follow the man-page conventions and are as
+follows:
+
+1 - Executable programs
+2 - System calls
+3 - Library functions
+4 - Special files
+5 - File formats and conventions
+6 - Games
+7 - Misellaneous
+8 - System administration
+9 - Kernel routines
+
+The documents are stored in an easy to read, plain text format. This
+allows the user to read them in any way they wish, using any pager
+they would like.
+
+EXAMPLES
+$ p /docs/forth.1
+Reading the documentation for the Forth interpreter using the p pager.
+
+$ cat /docs/clear.1
+Reading the short documentation for the executable program clear with
+cat.

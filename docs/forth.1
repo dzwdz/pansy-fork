@@ -1,0 +1,29 @@
+forth - an interpreter for the programming language Forth
+
+USAGE
+$ forth [ file ]
+
+DESCRIPTION
+forth is a simple interpreter for the concatenative, typeless programming
+language, Forth. It does not conform to any specific Forth standard, but
+resembles most other language implementations.
+To exit forth, evaluate the word 'bye'.
+
+FILES
+    /etc/forth/startup.fs
+
+NOTES
+forth has some peculiarities that may be mistaken for bugs. These include:
+ - Word definitions being overwritten when they are redefined. This makes a
+   feature like the `forget` action not possible.
+ - Output from word evaluation will be put on its separate line, unlike other
+   Forth implementations which put it next to the input line.
+
+forth is currently a work-in-progress project, and is missing many features.
+Some features not yet implemented are:
+ - Delimited expressions (like word definitions or printing) that can span
+   multiple lines.
+ - Variables and constants.
+ - User input.
+ - A REPL with good interactivity.
+ - Floating point numbers and their respective stack.
