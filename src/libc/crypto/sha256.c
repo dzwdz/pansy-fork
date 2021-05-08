@@ -1,7 +1,9 @@
 /*
  * this is boring as fuck
  * just read the wikipedia article on sha256
+ * NOTE: this assumes a little endian architecture
  */
+#include <byteswap.h>
 #include <crypto/sha256.h>
 #include <immintrin.h>
 #include <string.h>
@@ -43,6 +45,11 @@ void sha256_init(sha256_ctx *ctx) {
 static void sha256_step(sha256_ctx *ctx) {
     uint32_t w[64], s0, s1, ch, maj, temp1, temp2;
     memcpy(w, ctx->chunk, 64);
+
+    // we have to fix the endianness
+    for (int i = 0; i < 16; i++) {
+        w[i] = bswap_32(w[i]);
+    }
 
     for (int i = 16; i < 64; i++) {
         s0 = _lrotr(w[i-15],  7) ^ _lrotr(w[i-15], 18) ^ (w[i-15] >>  3);
@@ -120,12 +127,20 @@ void sha256_final(sha256_ctx *ctx) {
         memset(ctx->chunk, 0, 64);
     }
 
-    uint64_t tmp = __builtin_bswap64(ctx->length); // sue me
+    uint64_t tmp = bswap_64(ctx->length * 8);
     memcpy(ctx->chunk + 64 - 8, &tmp, 8);
     sha256_step(ctx);
 }
 
 // out is treated as an 32byte array to which the digest will be copied
 void sha256_digest(const sha256_ctx *ctx, void *out) {
+    ((uint32_t*)out)[0] = bswap_32(ctx->h0);
+    ((uint32_t*)out)[1] = bswap_32(ctx->h1);
+    ((uint32_t*)out)[2] = bswap_32(ctx->h2);
+    ((uint32_t*)out)[3] = bswap_32(ctx->h3);
+    ((uint32_t*)out)[4] = bswap_32(ctx->h4);
+    ((uint32_t*)out)[5] = bswap_32(ctx->h5);
+    ((uint32_t*)out)[6] = bswap_32(ctx->h6);
+    ((uint32_t*)out)[7] = bswap_32(ctx->h7);
 }
 

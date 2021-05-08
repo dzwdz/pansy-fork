@@ -1,3 +1,4 @@
+#include <byteswap.h>
 #include <stdint.h>
 #include <sys/socket.h>
 #include <sys/syscall.h>
@@ -41,16 +42,13 @@ ssize_t recv(int sockfd, void *buf, size_t len, int flags) {
 
 /*** MISC ***/
 uint16_t htons(uint16_t hosts) {
-    return hosts << 8 | hosts >> 8;
+    return bswap_16(hosts);
 }
 
 uint32_t htonl(uint32_t netl) {
-    return (0x000000FF & (netl >> 24))
-         | (0x0000FF00 & (netl >>  8))
-         | (0x00FF0000 & (netl <<  8))
-         | (0xFF000000 & (netl << 24));
+    return bswap_32(netl);
 }
 
 uint32_t ntohl(uint32_t netl) {
-    return htonl(netl);
+    return bswap_32(netl);
 }

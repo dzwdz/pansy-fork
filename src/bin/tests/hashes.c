@@ -1,14 +1,17 @@
 #include <crypto/sha256.h>
 #include <stdbool.h>
 
-const char *s = "this string is very long, it has exactly 64 characters. fuck yea. update, my needs have changed. now it has 128 chars. fuck yeah";
+const char *s = "hello world";
 
 bool test_sha256() {
     sha256_ctx ctx;
+    char digest[32];
+
     sha256_init(&ctx);
-//  sha256_append(&ctx, s, 128);
+    sha256_append(&ctx, s, 11);
     sha256_final(&ctx);
-    hexdump(&ctx, 64);
+    sha256_digest(&ctx, &digest);
+    hexdump(&digest, 32); // TODO add a normal check
 
     return true;
 }
