@@ -27,6 +27,7 @@ void handle_client(int fd) {
     printf("new connection from %s\n", conn.client_id);
 
     algo_negotiation(&conn);
+    key_exchange(&conn);
 
     free(conn.sbuf);
     // fd gets closed by server_loop

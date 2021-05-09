@@ -5,7 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 
-static void bignum_zeroout(bignum *a) {
+void bignum_zeroout(bignum *a) {
 	for (int i = 0; i < a->length; i++) {
 		a->digits[i] = 0;
 	}

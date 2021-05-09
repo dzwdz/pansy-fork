@@ -1,3 +1,4 @@
+#pragma once
 #include <stdint.h>
 
 typedef struct {
@@ -6,6 +7,7 @@ typedef struct {
 } bignum;
 
 bignum* bignum_new(uint16_t size);
+void bignum_zeroout(bignum *a);
 void bignum_fromhex(bignum *target, const char *hex);
 void bignum_print(const bignum *a);
 

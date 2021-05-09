@@ -1,5 +1,6 @@
 #include "conn.h"
 #include <arpa/inet.h>
+#include <bignum.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -80,6 +81,24 @@ iter_t pop_string(iter_t *iter) {
     str.pos = 0;
     iter->pos += str.max;
     return str;
+}
+
+// crashes when the client sends a mpint that's too large to fit in the target
+void pop_bignum(iter_t *iter, bignum* target) {
+    // TODO negatives
+    uint32_t len = pop_uint32(iter);
+    if ((len > target->length * sizeof(uint64_t))
+     || (iter->pos + len > iter->max)) exit(1);
+
+    // a mess
+    bignum_zeroout(target);
+    for (int i = 0; i < len; i++) {
+        int reverse = len - i - 1;
+        target->digits[reverse / 8]
+            |= ((uint64_t)(iter->base[iter->pos + i]  & 0xff) << 8 * (reverse % 8));
+    }
+
+    iter->pos += len;
 }
 
 void push_byte(iter_t *iter, uint8_t val) {

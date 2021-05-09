@@ -7,6 +7,7 @@
 #include "magics.h"
 #include "misc.h"
 #include "proto.h"
+#include <bignum.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -114,4 +115,16 @@ void algo_negotiation(connection *conn) {
         server_payload = iterator_copy(&packet);
         send_packet(conn, packet);
     }
+}
+
+// RFC 4253 / 8.
+// diffie-hellman-group14-sha256
+void key_exchange(connection *conn) {
+    bignum *E = bignum_new(33); // must be as big as the DH prime
+
+    { // 1. the client sends us E
+        iter_t packet = read_packet(conn);
+        if (pop_byte(&packet) != SSH_MSG_KEXDX_INIT) ssh_fatal(conn);
+        pop_bignum(&packet, E);
+    }    
 }
