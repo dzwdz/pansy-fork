@@ -26,3 +26,7 @@ void bignum_modexp_timingsafe(bignum *result, const bignum *base,
 //          0 if a = b
 //          1 if a > b
 int8_t bignum_compare (const bignum *a, const bignum *b);
+
+static inline uint8_t *bignum_byteat(bignum *bn, uint16_t pos) {
+    return (uint8_t*)bn->digits + pos;
+}

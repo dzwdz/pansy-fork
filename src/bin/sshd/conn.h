@@ -27,6 +27,7 @@ void push_byte(iter_t *iter, uint8_t val);
 void push_uint32(iter_t *iter, uint32_t val);
 void push_string(iter_t *iter, void *buf, uint32_t size);
 void push_cstring(iter_t *iter, const char *str);
+void push_bignum(iter_t *iter, const bignum *bn);
 
 bool namelist_has(iter_t haystack, const char *needle);
 

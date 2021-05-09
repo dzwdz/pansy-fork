@@ -1,4 +1,6 @@
 #include "crypto.h"
+#include "conn.h"
+#include "misc.h"
 #include <bignum.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -10,6 +12,8 @@
 bignum *HOST_N; // modulus
 bignum *HOST_E; // public exponent
 bignum *HOST_D; // private exponent
+
+iter_t HOST_KEY;
 
 void prepare_identities() {
     // assert HOST_N == null
@@ -44,9 +48,18 @@ void prepare_identities() {
     bignum_fromhex(HOST_E, p2);
     bignum_fromhex(HOST_D, p3);
 
-    bignum_print(HOST_N);
-    bignum_print(HOST_E);
-    bignum_print(HOST_D);
-
     close(fd);
+    free(buf);
+
+
+    HOST_KEY.base = malloc(32 + len * 8); // also should be enough i guess
+    HOST_KEY.max = 32 + len * 8;
+    HOST_KEY.pos = 0;
+    
+    push_cstring(&HOST_KEY, "ssh-rsa");
+    push_bignum(&HOST_KEY, HOST_E);
+    push_bignum(&HOST_KEY, HOST_N);
+
+    HOST_KEY.max = HOST_KEY.pos;
+    hexdump(HOST_KEY.base, HOST_KEY.max);
 }

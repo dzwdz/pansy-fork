@@ -101,6 +101,7 @@ void pop_bignum(iter_t *iter, bignum* target) {
     iter->pos += len;
 }
 
+
 void push_byte(iter_t *iter, uint8_t val) {
     iter->base[iter->pos] = val;
     if ((iter->pos += 1) > iter->max) exit(1);
@@ -124,6 +125,26 @@ void push_cstring(iter_t *iter, const char *str) {
     push_uint32(iter, size);
     memcpy(iter->base + iter->pos, str, size);
     if ((iter->pos += size) > iter->max) exit(1);
+}
+
+void push_bignum(iter_t *iter, const bignum *bn) {
+    int log2 = bignum_log2(bn);
+    int bytes = (log2 >> 3) + ((log2 & 0b111) ? 1 : 0);
+    // TODO support negative bignums
+    bool extended = 0x80 & *bignum_byteat(bn, bytes - 1);
+    
+    int len = bytes;
+    if (extended) len++;
+
+    push_uint32(iter, len);
+
+    if (extended) {
+        push_byte(iter, 0);
+        len--;
+    }
+    while (len--) {
+        push_byte(iter, *bignum_byteat(bn, len));
+    }
 }
 
 
