@@ -41,7 +41,7 @@ uid_t read_id(char *path, enum id_value id) {
 }
 
 int main() {
-    puts("\e[2J\033[H~ pansy linux ~");
+    puts("\033[2J\033[H~ pansy linux ~");
 
     char *userbuf = malloc(256);
     strcpy(userbuf, "/Users/");

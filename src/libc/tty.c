@@ -7,7 +7,7 @@ void readline(char* buf, size_t buf_size) {
     size_t i = 0;
     for (; i < buf_size; i++) {
         read(1, &buf[i], 1);
-        if (buf[i] == '\n') break;
+        if (buf[i] == '\n' || buf[i] == '\r') break;
     }
     buf[i] = '\0';
 }
@@ -37,4 +37,8 @@ void hexdump(const void *buf, size_t len) {
         }
         putchar('\n');
     }
+}
+
+void clear_screen(void) {
+    write(STDOUT_FILENO, "\033[2J\033[H", 7);
 }

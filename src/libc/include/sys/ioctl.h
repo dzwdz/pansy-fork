@@ -161,5 +161,11 @@
 #define SIOCGPGRP       0x8904
 #define SIOCATMARK      0x8905
 
+struct winsize {
+    unsigned short ws_row;
+    unsigned short ws_col;
+    unsigned short ws_xpixel;   /* unused */
+    unsigned short ws_ypixel;   /* unused */
+};
 
 int ioctl(int fd, unsigned long request, ...);
