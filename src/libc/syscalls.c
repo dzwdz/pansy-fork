@@ -75,3 +75,7 @@ int dup2(int oldfd, int newfd) {
 off_t lseek(int fd, off_t offset, int whence) {
     return syscall(SYS_lseek, fd, offset, whence);
 }
+
+ssize_t getrandom(void *buf, size_t buflen, unsigned int flags) {
+    return syscall(SYS_getrandom, buf, buflen, flags);
+}
