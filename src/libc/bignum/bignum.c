@@ -67,7 +67,7 @@ void bignum_copy(bignum *dest, const bignum *src) {
 	if (src->length < to_copy)
 		to_copy = src->length;
 
-	memcpy(dest, src, to_copy * sizeof(uint64_t));
+	memcpy(dest->digits, src->digits, to_copy * sizeof(uint64_t));
 }
 
 
@@ -162,16 +162,24 @@ void bignum_modexp_timingsafe(bignum *result, const bignum *base,
 	free(x3);
 }
 
-void bignum_sub(bignum *result, const bignum *a, const bignum *b) {
-	int length = result->length;
-	if (a->length < length) length = a->length;
-	if (b->length < length) length = b->length;
+void bignum_add(bignum *to, const bignum *num) {
+    int length = to->length;
+    if (num->length < length) length = num->length;
 
+    for (int i = 0; i < length; i++) {
+        bignum_addat(to, i, num->digits[i]);
+    }
+}
+
+void bignum_sub(bignum *result, const bignum *a, const bignum *b) {
 	bool overflow = false;
-	for (int i = 0; i < length; i++) {
+    int dA, dB;
+	for (int i = 0; i < result->length; i++) {
 		// i am handling overflows in a dumb (and slow) way because __builtin_sub_overflow
 		// didn't seem to work
 		// possible bottleneck, todo
+        dA = (i < a->length) ? a->digits[i] : 0;
+        dB = (i < b->length) ? b->digits[i] : 0;
 		
 		if (overflow) {
 			if (a->digits[i] == 0) {
@@ -188,10 +196,6 @@ void bignum_sub(bignum *result, const bignum *a, const bignum *b) {
 			overflow = true;
 			result->digits[i] = ((~0) - b->digits[i]) + a->digits[i] + 1;
 		}
-	}
-
-	for (int i = length; i < result->length; i++) {
-		result->digits[i] = overflow ? ~0 : 0;
 	}
 }
 
@@ -315,4 +319,18 @@ void bignum_div(const bignum *dividend, const bignum *divisor,
 	free(intermediate);
 	free(d);
 	free(multiple);
+}
+
+void bignum_random(const bignum *lower, const bignum *upper, bignum *target) {
+    bignum *tmp = bignum_new(upper->length);
+
+    bignum *range = bignum_new(upper->length);
+    bignum_sub(range, upper, lower);
+
+    getentropy(tmp->digits, tmp->length * sizeof(uint64_t));
+    bignum_div(tmp, range, NULL, target);
+    bignum_add(target, lower);
+
+    free(tmp);
+    free(range);
 }

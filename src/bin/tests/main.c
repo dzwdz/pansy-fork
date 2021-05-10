@@ -18,7 +18,7 @@ struct test_runner {
 
 struct test_runner runners[] = {
 //	{"malloc", &test_malloc},
-//	{"bignum", &test_bignum},
+	{"bignum", &test_bignum},
     {"sha256", &test_sha256},
 	{NULL, NULL}
 };

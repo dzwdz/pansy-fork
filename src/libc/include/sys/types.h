@@ -19,3 +19,6 @@ typedef uquad_t ino_t;
 typedef quad_t off_t;
 typedef quad_t blksize_t;
 typedef quad_t blkcnt_t;
+
+typedef unsigned long int size_t;
+typedef long int ssize_t;

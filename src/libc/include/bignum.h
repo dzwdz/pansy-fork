@@ -14,6 +14,7 @@ void bignum_print(const bignum *a);
 void bignum_mul(bignum *result, const bignum *a, const bignum *b);
 void bignum_div(const bignum *dividend, const bignum *divisor,
 		bignum *quotient, bignum *remainder);
+void bignum_add(bignum *to, const bignum *num);
 void bignum_sub(bignum *result, const bignum *a, const bignum *b);
 
 uint16_t bignum_order(const bignum *bn);
@@ -30,3 +31,6 @@ int8_t bignum_compare (const bignum *a, const bignum *b);
 static inline uint8_t *bignum_byteat(bignum *bn, uint16_t pos) {
     return (uint8_t*)bn->digits + pos;
 }
+
+// biased, and also probably vulnerable to timing attacks
+void bignum_random(const bignum *lower, const bignum *upper, bignum *target);

@@ -70,7 +70,7 @@ void server_loop(unsigned short port) {
 }
 
 int main() {
-    prepare_identities();
+    init_crypto();
     exit(0);
     server_loop(2020);
 }

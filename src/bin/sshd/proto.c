@@ -4,6 +4,7 @@
  */
 
 #include "conn.h"
+#include "crypto.h"
 #include "magics.h"
 #include "misc.h"
 #include "proto.h"
@@ -126,5 +127,14 @@ void key_exchange(connection *conn) {
         iter_t packet = read_packet(conn);
         if (pop_byte(&packet) != SSH_MSG_KEXDX_INIT) ssh_fatal(conn);
         pop_bignum(&packet, E);
-    }    
+    }
+    { // 2. we send the signature
+        iter_t packet = start_packet(conn);
+
+        push_byte(&packet, SSH_MSG_KEXDX_REPLY);
+        push_string(&packet, HOST_KEY.base, HOST_KEY.max); // TODO push_iter
+
+    }
+
+    free(E);
 }

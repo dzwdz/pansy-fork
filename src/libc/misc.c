@@ -1,8 +1,9 @@
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
+#include <sys/random.h>
 #include <unistd.h>
 
 void __libc_start_main(int argc, char** argv,
@@ -47,4 +48,21 @@ int atoi(const char *str) {
         n = n * 10 + str[i] - '0';
     }
     return n * sign;
+}
+
+// deviates from the spec - accepts any length
+int getentropy(void *buffer, size_t len) {
+    char *pos = buffer;
+
+    while (len) {
+        int ret = getrandom(pos, len, 0);
+        if (ret < 0)  {
+            // TODO check for interrupts
+            return ret;
+        }
+        pos += ret;
+        len -= ret;
+    }
+
+    return 0;
 }
