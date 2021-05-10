@@ -92,7 +92,7 @@ void pop_bignum(iter_t *iter, bignum* target) {
 
     // a mess
     bignum_zeroout(target);
-    for (int i = 0; i < len; i++) {
+    for (uint32_t i = 0; i < len; i++) {
         int reverse = len - i - 1;
         target->digits[reverse / 8]
             |= ((uint64_t)(iter->base[iter->pos + i]  & 0xff) << 8 * (reverse % 8));
@@ -127,11 +127,18 @@ void push_cstring(iter_t *iter, const char *str) {
     if ((iter->pos += size) > iter->max) exit(1);
 }
 
+#pragma GCC diagnostic push
+// i pass the bignum to the bignum_byteat function, which returns a pointer
+// thus that function can't have a const argument
+// the only thing that i do with that pointer is reading it [at the two marked
+// places], so it's safe
+#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
+
 void push_bignum(iter_t *iter, const bignum *bn) {
     int log2 = bignum_log2(bn);
     int bytes = (log2 >> 3) + ((log2 & 0b111) ? 1 : 0);
     // TODO support negative bignums
-    bool extended = 0x80 & *bignum_byteat(bn, bytes - 1);
+    bool extended = 0x80 & *bignum_byteat(bn, bytes - 1); // mark
     
     int len = bytes;
     if (extended) len++;
@@ -143,9 +150,10 @@ void push_bignum(iter_t *iter, const bignum *bn) {
         len--;
     }
     while (len--) {
-        push_byte(iter, *bignum_byteat(bn, len));
+        push_byte(iter, *bignum_byteat(bn, len)); // mark
     }
 }
+#pragma GCC diagnostic pop
 
 
 // a dumb helper function
