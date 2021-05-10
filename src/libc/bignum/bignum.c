@@ -173,29 +173,20 @@ void bignum_add(bignum *to, const bignum *num) {
 
 void bignum_sub(bignum *result, const bignum *a, const bignum *b) {
 	bool overflow = false;
-    int dA, dB;
+    uint64_t dA, dB;
 	for (int i = 0; i < result->length; i++) {
-		// i am handling overflows in a dumb (and slow) way because __builtin_sub_overflow
-		// didn't seem to work
-		// possible bottleneck, todo
         dA = (i < a->length) ? a->digits[i] : 0;
         dB = (i < b->length) ? b->digits[i] : 0;
-		
-		if (overflow) {
-			if (a->digits[i] == 0) {
-				result->digits[i] = ~0;
-			} else {
-				result->digits[i]--;
-				overflow = false;
-			}
-		}
 
-		if (a->digits[i] >= b->digits[i]) {
-			result->digits[i] = a->digits[i] - b->digits[i];
-		} else {
-			overflow = true;
-			result->digits[i] = ((~0) - b->digits[i]) + a->digits[i] + 1;
-		}
+        if (overflow) {
+            if (dB == (uint64_t) ~0) { // untested
+                result->digits[i] = dA;
+                continue;
+            }
+            dB++;
+            overflow = false;
+        }
+        overflow = __builtin_sub_overflow(dA, dB, &result->digits[i]);
 	}
 }
 
