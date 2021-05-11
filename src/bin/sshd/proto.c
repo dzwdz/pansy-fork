@@ -47,8 +47,6 @@ void id_exchange(connection *conn) {
 
 // RFC 4253 / 7.
 void algo_negotiation(connection *conn) {
-    iter_t client_payload, server_payload;
-
     { // c2s
         iter_t packet = read_packet(conn);
 
@@ -89,7 +87,7 @@ void algo_negotiation(connection *conn) {
         }
         pop_uint32(&packet); // "reserved"
 
-        client_payload = iterator_copy(&packet);
+        conn->client_payload = iterator_copy(&packet);
     }
     { // s2c
         iter_t packet = start_packet(conn);
@@ -113,7 +111,7 @@ void algo_negotiation(connection *conn) {
         push_uint32 (&packet, 0); // reserved
 
         packet.max = packet.pos;
-        server_payload = iterator_copy(&packet);
+        conn->server_payload = iterator_copy(&packet);
         send_packet(conn, packet);
     }
 }
@@ -121,20 +119,62 @@ void algo_negotiation(connection *conn) {
 // RFC 4253 / 8.
 // diffie-hellman-group14-sha256
 void key_exchange(connection *conn) {
-    bignum *E = bignum_new(33); // must be as big as the DH prime
+    bignum *cl_pub  = bignum_new(33), // must be as big as the DH prime
+           *our_pub = bignum_new(33),
+           *shared  = bignum_new(33);
 
-    { // 1. the client sends us E
+    { // 1. the client sends us E, we do the DH math
         iter_t packet = read_packet(conn);
         if (pop_byte(&packet) != SSH_MSG_KEXDX_INIT) ssh_fatal(conn);
-        pop_bignum(&packet, E);
+        pop_bignum(&packet, cl_pub);
+
+        diffie_hellman_group14(cl_pub, our_pub, shared);
+
+        puts("dh shared secret:");
+        bignum_print(shared);
     }
-    { // 2. we send the signature
+    puts("1done");
+    { // 2. we prepare the signature
+        // i'm using sbuf as a buffer to hold the hash contents to simplify
+        // the code a bit
+        iter_t hash = {
+            .base = conn->sbuf,
+            .max = SBUF_SIZE,
+            .pos = 0
+        };
+
+        push_cstring(&hash, conn->client_id);
+        push_cstring(&hash, SERVER_ID);
+        push_iter   (&hash, conn->client_payload);
+        push_iter   (&hash, conn->server_payload);
+        push_iter   (&hash, HOST_KEY);
+        push_bignum (&hash, cl_pub);
+        push_bignum (&hash, our_pub);
+        push_bignum (&hash, shared);
+
+        // also we free the client/server payloads
+        free(conn->client_payload.base);
+        free(conn->server_payload.base);
+    }
+    puts("2done");
+    { // 3. we send the signature, our DH pub, and our host key
         iter_t packet = start_packet(conn);
 
-        push_byte(&packet, SSH_MSG_KEXDX_REPLY);
-        push_string(&packet, HOST_KEY.base, HOST_KEY.max); // TODO push_iter
+        push_byte  (&packet, SSH_MSG_KEXDX_REPLY);
+        push_iter  (&packet, HOST_KEY);
+        push_bignum(&packet, our_pub);
+        push_cstring(&packet, "signature goes here");
 
+        send_packet(conn, packet);
     }
+    puts("3done");
+    {
+        iter_t packet = read_packet(conn);
+        hexdump(packet.base, packet.max);
+    }
+    puts("4done");
 
-    free(E);
+    free(cl_pub);
+    free(our_pub);
+    free(shared);
 }

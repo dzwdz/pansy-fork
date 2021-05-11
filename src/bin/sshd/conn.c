@@ -119,6 +119,11 @@ void push_string(iter_t *iter, void *buf, uint32_t size) {
     if ((iter->pos += size) > iter->max) exit(1);
 }
 
+void push_iter(iter_t *target, iter_t val) {
+    // this is getting meta
+    push_string(target, val.base, val.max);
+}
+
 // doesn't include the null byte
 void push_cstring(iter_t *iter, const char *str) {
     uint32_t size = strlen(str);;

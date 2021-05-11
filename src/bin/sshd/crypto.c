@@ -16,6 +16,7 @@ iter_t HOST_KEY;
 
 bignum *DH14P;
 bignum *ONE;
+bignum *TWO;
 
 static void prepare_identities() {
     // assert HOST_N == null
@@ -69,10 +70,12 @@ static void prepare_identities() {
 void diffie_hellman_group14(const bignum *cl_pub, bignum *our_pub,
                             bignum *shared_secret) {
     bignum *our_secret = bignum_new(256 / 8);
+    bignum_random(ONE, DH14P, our_secret);
 
-    // ...
+    bignum_modexp_timingsafe(our_pub, TWO, our_secret, DH14P);
+    bignum_modexp_timingsafe(shared_secret, cl_pub, our_secret, DH14P);
 
-    free(our_secret);    
+    free(our_secret);
 }
 
 void init_crypto() {
@@ -85,9 +88,6 @@ void init_crypto() {
     ONE = bignum_new(1);
     bignum_fromhex(ONE, "1");
 
-    bignum *test = bignum_new(256 / 8);
-    bignum_random(ONE, DH14P, test);
-    bignum_print(test);
-
-    exit(0);
+    TWO = bignum_new(1);
+    bignum_fromhex(TWO, "2");
 }

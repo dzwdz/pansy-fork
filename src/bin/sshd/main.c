@@ -58,7 +58,7 @@ void server_loop(unsigned short port) {
     for (;;) {
         int client_fd = accept(sockfd, (void*)&client_addr, &addr_size);
 
-        if (fork() == 0) {
+        if (1 || fork() == 0) {
             handle_client(client_fd);
             close(client_fd);
             exit(0);
@@ -70,7 +70,7 @@ void server_loop(unsigned short port) {
 }
 
 int main() {
+    puts("initializing crypto...");
     init_crypto();
-    exit(0);
     server_loop(2020);
 }

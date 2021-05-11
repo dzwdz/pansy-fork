@@ -12,6 +12,9 @@ typedef struct {
 
     // id_exchange
     char *client_id;
+
+    // algo_exchange, freed in key exchange
+    iter_t client_payload, server_payload;
 } connection;
 
 iter_t read_packet(connection *conn);
@@ -27,6 +30,7 @@ void push_byte(iter_t *iter, uint8_t val);
 void push_uint32(iter_t *iter, uint32_t val);
 void push_string(iter_t *iter, void *buf, uint32_t size);
 void push_cstring(iter_t *iter, const char *str);
+void push_iter(iter_t *target, iter_t val);
 void push_bignum(iter_t *iter, const bignum *bn);
 
 bool namelist_has(iter_t haystack, const char *needle);

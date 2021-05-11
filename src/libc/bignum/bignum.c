@@ -15,7 +15,7 @@ void bignum_zeroout(bignum *a) {
 bignum* bignum_new(uint16_t size) {  
 	bignum *b = malloc(sizeof(bignum) + size * sizeof(uint64_t));
 	b->length = size;
-	bignum_zeroout(b);
+	bignum_zeroout(b); // TODO this crashes with optimizations enabled
 	return b;
 }
 
@@ -122,8 +122,8 @@ void bignum_modexp_timingsafe(bignum *result, const bignum *base,
 	         order2 = bignum_order(modulus);
 	// order2 is the max
 	if (order1 < order2) order1 = order2;
-	order1 *= sizeof(uint64_t);
 	order1  = order1 * order1 + 1;
+	order1 *= sizeof(uint64_t);
 
 	bignum *x1 = bignum_new(order1);
 	bignum_copy(x1, base);
