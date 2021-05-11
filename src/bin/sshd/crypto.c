@@ -71,6 +71,7 @@ void diffie_hellman_group14(const bignum *cl_pub, bignum *our_pub,
                             bignum *shared_secret) {
     bignum *our_secret = bignum_new(256 / 8);
     bignum_random(ONE, DH14P, our_secret);
+    bignum_random(ONE, DH14P, cl_pub); // TODO if this makes it to a commit i'm dumb
 
     bignum_modexp_timingsafe(our_pub, TWO, our_secret, DH14P);
     bignum_modexp_timingsafe(shared_secret, cl_pub, our_secret, DH14P);

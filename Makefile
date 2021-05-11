@@ -7,7 +7,7 @@ CFLAGS += -nostdlib -static
 CFLAGS += -Wall -Wextra
 CFLAGS += -g
 CFLAGS += --sysroot=src
-CFLAGS += -Isrc/libc/include
+CFLAGS += -Isrc/libc/include -O2
 
 KERNEL ?= deps/vmlinuz
 KFLAGS := ${KFLAGS},

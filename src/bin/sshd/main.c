@@ -72,5 +72,14 @@ void server_loop(unsigned short port) {
 int main() {
     puts("initializing crypto...");
     init_crypto();
-    server_loop(2020);
+
+
+    // temp benchmark
+    bignum *cl_pub  = bignum_new(33), // must be as big as the DH prime
+           *our_pub = bignum_new(33),
+           *shared  = bignum_new(33);
+
+    diffie_hellman_group14(cl_pub, our_pub, shared);
+
+    //server_loop(2022);
 }

@@ -220,15 +220,23 @@ void bignum_mul(bignum *result, const bignum *a, const bignum *b) {
 
 	for (uint16_t i = 0; i < a->length; i++) {
 		if (a->digits[i] == 0) continue;
-		for (uint16_t j = 0; j+i < length; j++) { // potential overflow
-			if (j >= b->length) break; // TODO
-			if (b->digits[j] == 0) continue;
+        
+        uint16_t upper = length - i;
+        if (b->length < upper) upper = b->length;
+
+        uint64_t low = 0, high;
+		for (uint16_t j = 0; j < upper; j++) { // potential overflow
+			bignum_addat(result, j+i, low);
+
+			if (b->digits[j] == 0) {
+                low = 0;
+                continue;
+            }
+
 			__int128 product = (__int128)(a->digits[i]) * (__int128)(b->digits[j]);
-			uint64_t low  = product >> 64;
-			uint64_t high = product;
+			low  = product >> 64;
+			high = product;
 			bignum_addat(result, j+i, high);
-			if (j+i + 1 < length)
-				bignum_addat(result, j+i + 1, low);
 		}
 	}
 }
