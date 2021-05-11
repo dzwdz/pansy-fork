@@ -2,8 +2,8 @@
 #include <stdint.h>
 
 typedef struct {
-	uint16_t length;
-	uint64_t digits[];
+    uint16_t length;
+    uint64_t digits[];
 } bignum;
 
 bignum* bignum_new(uint16_t size);
@@ -13,7 +13,7 @@ void bignum_print(const bignum *a);
 
 void bignum_mul(bignum *result, const bignum *a, const bignum *b);
 void bignum_div(const bignum *dividend, const bignum *divisor,
-		bignum *quotient, bignum *remainder);
+        bignum *quotient, bignum *remainder);
 void bignum_add(bignum *to, const bignum *num);
 void bignum_sub(bignum *result, const bignum *a, const bignum *b);
 
@@ -21,7 +21,7 @@ uint16_t bignum_order(const bignum *bn);
 uint64_t bignum_log2(const bignum *bn);
 
 void bignum_modexp_timingsafe(bignum *result, const bignum *base,
-							  const bignum *power, const bignum *modulus);
+                              const bignum *power, const bignum *modulus);
 
 // returns -1 if a < b
 //          0 if a = b
