@@ -25,6 +25,14 @@ bool test_bignum() {
     bignum_mul(asqr, a, a);
     bignum_print(asqr);
 
+    puts("(a*a) * a [naive] =");
+    bignum_mul(c, asqr, a);
+    bignum_print(c);
+
+    puts("(a*a) * a [karatsuba] =");
+    bignum_mul_karatsuba(c, asqr, a);
+    bignum_print(c);
+
     puts("b ** b (mod a ** 2) =");
     bignum_modexp_timingsafe(a, b, b, asqr);
     bignum_print(a);

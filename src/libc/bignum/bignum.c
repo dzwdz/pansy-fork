@@ -138,18 +138,18 @@ void bignum_modexp_timingsafe(bignum *result, const bignum *base,
                      & (1ull << (i % 64));
 
         // x3 = x1 * x2
-        bignum_mul(x3, x1, x2);
+        bignum_mul_karatsuba(x3, x1, x2);
         if (bit == 0) {
             // x2 = x2 % modules
             bignum_div(x3, modulus, NULL, x2);
-            bignum_mul(x3, x1, x1);
+            bignum_mul_karatsuba(x3, x1, x1);
             // x1 = x1 % modules
             bignum_div(x3, modulus, NULL, x1);
 
         } else {
             // x1 = x1 % modules
             bignum_div(x3, modulus, NULL, x1);
-            bignum_mul(x3, x2, x2);
+            bignum_mul_karatsuba(x3, x2, x2);
             // x2 = x2 % modules
             bignum_div(x3, modulus, NULL, x2);
         }
@@ -239,6 +239,65 @@ void bignum_mul(bignum *result, const bignum *a, const bignum *b) {
             bignum_addat(result, j+i, high);
         }
     }
+}
+
+void bignum_mul_karatsuba(bignum *result, const bignum *a, const bignum *b) {
+    if (a->length <= 2 || b->length <= 2) {
+        bignum_mul(result, a , b);
+        return;
+    }
+
+    uint16_t min = a->length;
+    if (b->length < min) min = b->length;
+    uint16_t split = min >> 1; // floor(min / 2)
+
+    bignum *hi1 = bignum_new(a->length - split),
+           *lo1 = bignum_new(split + 1), // +1 to account for when hi1 gets added
+           *hi2 = bignum_new(b->length - split),
+           *lo2 = bignum_new(split + 1); // see above
+
+    // the high bignums are unnecessary
+
+    memcpy(lo1->digits, a->digits, split * sizeof(uint64_t));
+    memcpy(lo2->digits, b->digits, split * sizeof(uint64_t));
+    memcpy(hi1->digits, &a->digits[split], (a->length - split) * sizeof(uint64_t));
+    memcpy(hi2->digits, &b->digits[split], (b->length - split) * sizeof(uint64_t));
+
+    bignum *z0 = bignum_new(min),
+           *z1 = bignum_new(min),
+           *z2 = bignum_new(a->length - split + b->length - split);
+                         //  = a->len + b->len - floor(min/2)*2
+                         // <= a->len + b->len - min
+                         //  = max(a->len, b->len)
+
+    bignum_mul_karatsuba(z0, lo1, lo2);
+    bignum_add(lo1, hi1);
+    bignum_add(lo2, hi2);
+    bignum_mul_karatsuba(z1, lo1, lo2);
+    bignum_mul_karatsuba(z2, hi1, hi2);
+
+    free(hi1);
+    free(lo1);
+    free(hi2);
+    free(lo2);
+
+    bignum_sub(z1, z1, z2);
+    bignum_sub(z1, z1, z0);
+
+    bignum_copy(result, z0);
+    for (int i = 0; i < min; i++) {
+        if (split + i >= result->length) break;
+        bignum_addat(result, split + i, z1->digits[i]);
+    }
+    split *= 2;
+    for (int i = 0; i < min; i++) {
+        if (split + i >= result->length) break;
+        bignum_addat(result, split + i, z2->digits[i]);
+    }
+
+    free(z0);
+    free(z1);
+    free(z2);
 }
 
 // https://youtu.be/iGVZIDQl6m0?t=1231
