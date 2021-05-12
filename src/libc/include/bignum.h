@@ -15,7 +15,7 @@ void bignum_mul(bignum *result, const bignum *a, const bignum *b);
 void bignum_mul_karatsuba(bignum *result, const bignum *a, const bignum *b);
 void bignum_div(const bignum *dividend, const bignum *divisor,
         bignum *quotient, bignum *remainder);
-void bignum_add(bignum *to, const bignum *num);
+void bignum_add(bignum *result, const bignum *a, const bignum *b);
 void bignum_sub(bignum *result, const bignum *a, const bignum *b);
 
 uint16_t bignum_order(const bignum *bn);

@@ -75,7 +75,7 @@ void bignum_copy(bignum *dest, const bignum *src) {
 static inline void addat_internal(uint64_t *target, uint16_t len, uint64_t to_add) {
     int overflow = __builtin_add_overflow(*target, to_add, target);
 
-    while (overflow && len--) {
+    while (overflow && --len) {
         target++;
         overflow = __builtin_add_overflow(*target, 1, target);
     }
@@ -164,13 +164,30 @@ void bignum_modexp_timingsafe(bignum *result, const bignum *base,
     free(x3);
 }
 
-void bignum_add(bignum *to, const bignum *num) {
-    int length = to->length;
-    if (num->length < length) length = num->length;
+static void add_internal(uint64_t *res, uint16_t reslen,
+                         const uint64_t *num1, uint16_t len1,
+                         const uint64_t *num2, uint16_t len2) {
+    bool overflow = false;
+    uint64_t dA, dB;
+    for (int i = 0; i < reslen; i++) {
+        dA = (i < len1) ? num1[i] : 0;
+        dB = (i < len2) ? num2[i] : 0;
 
-    for (int i = 0; i < length; i++) {
-        bignum_addat(to, i, num->digits[i]);
+        if (overflow) {
+            if (dB == (uint64_t) ~0) { // untested
+                res[i] = dA;
+                continue;
+            }
+            dB++;
+            overflow = false;
+        }
+        overflow = __builtin_add_overflow(dA, dB, &res[i]);
     }
+}
+
+void bignum_add(bignum *result, const bignum *a, const bignum *b) {
+    add_internal(result->digits, result->length, a->digits, a->length,
+                 b->digits, b->length);
 }
 
 static void sub_internal(uint64_t *res, uint16_t reslen,
@@ -273,26 +290,23 @@ static void karatsuba_internal(uint64_t *res, uint16_t reslen,
     }
     uint16_t split = min >> 1; // floor(min / 2)
 
-    bignum *hi1 = bignum_new(len1 - split),
-           *lo1 = bignum_new(split + 1), // +1 to account for when hi1 gets added
-           *hi2 = bignum_new(len2 - split),
+    bignum *lo1 = bignum_new(split + 1), // +1 to account for when hi1 gets added
            *lo2 = bignum_new(split + 1); // see above
-
-    // the high bignums are unnecessary
+    // those are unnecessary too
 
     memcpy(lo1->digits, fac1, split * sizeof(uint64_t));
     memcpy(lo2->digits, fac2, split * sizeof(uint64_t));
-    memcpy(hi1->digits, &fac1[split], (len1 - split) * sizeof(uint64_t));
-    memcpy(hi2->digits, &fac2[split], (len2 - split) * sizeof(uint64_t));
 
     // we store z0 in the result
     bignum *z1 = bignum_new(min),
            *z2 = bignum_new(max);
 
-    karatsuba_internal(res, reslen, lo1->digits, lo1->length,
-                                    lo2->digits, lo2->length); // z0
-    bignum_add(lo1, hi1);
-    bignum_add(lo2, hi2);
+    // TODO i need to remove the +1 here, but it causes the result to be wrong
+    // in some rare cases (it shouldn't)
+    karatsuba_internal(res, reslen, lo1->digits, split + 1,
+                                    lo2->digits, split + 1); // z0
+    add_internal(lo1->digits, split + 1, fac1, split, &fac1[split], len1 - split);
+    add_internal(lo2->digits, split + 1, fac2, split, &fac2[split], len2 - split);
     karatsuba_internal(z1->digits, z1->length, lo1->digits, lo1->length,
                                                lo2->digits, lo2->length); // z1
     karatsuba_internal(z2->digits, z1->length, &fac1[split], len1 - split,
@@ -313,9 +327,7 @@ static void karatsuba_internal(uint64_t *res, uint16_t reslen,
         addat_internal(&res[pos], reslen - pos, z2->digits[i]);
     }
 
-    free(hi1);
     free(lo1);
-    free(hi2);
     free(lo2);
     free(z1);
     free(z2);
@@ -413,7 +425,7 @@ void bignum_random(const bignum *lower, const bignum *upper, bignum *target) {
 
     getentropy(tmp->digits, tmp->length * sizeof(uint64_t));
     bignum_div(tmp, range, NULL, target);
-    bignum_add(target, lower);
+    bignum_add(target, target, lower);
 
     free(tmp);
     free(range);
