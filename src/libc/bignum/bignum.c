@@ -5,6 +5,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#define KARATSUBA_THRESHOLD 3
+
 void bignum_zeroout(bignum *a) {
     for (int i = 0; i < a->length; i++) {
         a->digits[i] = 0;
@@ -70,17 +72,17 @@ void bignum_copy(bignum *dest, const bignum *src) {
     memcpy(dest->digits, src->digits, to_copy * sizeof(uint64_t));
 }
 
+static inline void addat_internal(uint64_t *target, uint16_t len, uint64_t to_add) {
+    int overflow = __builtin_add_overflow(*target, to_add, target);
+
+    while (overflow && len--) {
+        target++;
+        overflow = __builtin_add_overflow(*target, 1, target);
+    }
+}
 
 static inline void bignum_addat(bignum *target, uint16_t pos, uint64_t to_add) {
-
-    int overflow = __builtin_add_overflow(
-            target->digits[pos], to_add, &target->digits[pos]);
-
-    while (overflow) {
-        if (++pos >= target->length) break;
-        overflow = __builtin_add_overflow(
-                target->digits[pos], 1, &target->digits[pos]);
-    }
+    addat_internal(&target->digits[pos], target->length - pos, to_add);
 }
 
 // returns the index of the last nonzero digit + 1
@@ -171,23 +173,30 @@ void bignum_add(bignum *to, const bignum *num) {
     }
 }
 
-void bignum_sub(bignum *result, const bignum *a, const bignum *b) {
+static void sub_internal(uint64_t *res, uint16_t reslen,
+                         const uint64_t *num1, uint16_t len1,
+                         const uint64_t *num2, uint16_t len2) {
     bool overflow = false;
     uint64_t dA, dB;
-    for (int i = 0; i < result->length; i++) {
-        dA = (i < a->length) ? a->digits[i] : 0;
-        dB = (i < b->length) ? b->digits[i] : 0;
+    for (int i = 0; i < reslen; i++) {
+        dA = (i < len1) ? num1[i] : 0;
+        dB = (i < len2) ? num2[i] : 0;
 
         if (overflow) {
             if (dB == (uint64_t) ~0) { // untested
-                result->digits[i] = dA;
+                res[i] = dA;
                 continue;
             }
             dB++;
             overflow = false;
         }
-        overflow = __builtin_sub_overflow(dA, dB, &result->digits[i]);
+        overflow = __builtin_sub_overflow(dA, dB, &res[i]);
     }
+}
+
+void bignum_sub(bignum *result, const bignum *a, const bignum *b) {
+    sub_internal(result->digits, result->length, a->digits, a->length,
+                 b->digits, b->length);
 }
 
 // returns -1 if a < b
@@ -214,90 +223,107 @@ int8_t bignum_compare (const bignum *a, const bignum *b) {
     return 0;
 }
 
-void bignum_mul(bignum *result, const bignum *a, const bignum *b) {
-    bignum_zeroout(result);
-    uint16_t length = result->length;
+static void naivemul_internal(uint64_t *res, uint16_t reslen,
+                              const uint64_t *fac1, uint16_t len1,
+                              const uint64_t *fac2, uint16_t len2) {
+    memset(res, 0, reslen * sizeof(uint64_t)); // zeroout
 
-    for (uint16_t i = 0; i < a->length; i++) {
-        if (a->digits[i] == 0) continue;
+    for (uint16_t i = 0; i < len1; i++) {
+        if (fac1[i] == 0) continue;
         
-        uint16_t upper = length - i;
-        if (b->length < upper) upper = b->length;
+        uint16_t upper = reslen - i;
+        if (len2 < upper) upper = len2;
 
         uint64_t low = 0, high;
         for (uint16_t j = 0; j < upper; j++) { // potential overflow
-            bignum_addat(result, j+i, low);
+            uint16_t pos = j + i;
+            addat_internal(&res[pos], reslen - pos, low);
 
-            if (b->digits[j] == 0) {
+            if (fac2[j] == 0) {
                 low = 0;
                 continue;
             }
 
-            __int128 product = (__int128)(a->digits[i]) * (__int128)(b->digits[j]);
+            __int128 product = (__int128)(fac1[i]) * (__int128)(fac2[j]);
             low  = product >> 64;
             high = product;
-            bignum_addat(result, j+i, high);
+            addat_internal(&res[pos], reslen - pos, high);
         }
     }
 }
 
-void bignum_mul_karatsuba(bignum *result, const bignum *a, const bignum *b) {
-    if (a->length <= 2 || b->length <= 2) {
-        bignum_mul(result, a , b);
+void bignum_mul(bignum *result, const bignum *a, const bignum *b) {
+    naivemul_internal(result->digits, result->length, a->digits, a->length,
+                      b->digits, b->length);
+}
+
+static void karatsuba_internal(uint64_t *res, uint16_t reslen,
+                               const uint64_t *fac1, uint16_t len1,
+                               const uint64_t *fac2, uint16_t len2) {
+    if (len1 <= KARATSUBA_THRESHOLD || len2 <= KARATSUBA_THRESHOLD) {
+        naivemul_internal(res, reslen, fac1, len1, fac2, len2);
         return;
     }
 
-    uint16_t min = a->length;
-    if (b->length < min) min = b->length;
+    uint16_t min = len1;
+    uint16_t max = len2;
+    if (max < min) {
+        min = len2;
+        max = len1;
+    }
     uint16_t split = min >> 1; // floor(min / 2)
 
-    bignum *hi1 = bignum_new(a->length - split),
+    bignum *hi1 = bignum_new(len1 - split),
            *lo1 = bignum_new(split + 1), // +1 to account for when hi1 gets added
-           *hi2 = bignum_new(b->length - split),
+           *hi2 = bignum_new(len2 - split),
            *lo2 = bignum_new(split + 1); // see above
 
     // the high bignums are unnecessary
 
-    memcpy(lo1->digits, a->digits, split * sizeof(uint64_t));
-    memcpy(lo2->digits, b->digits, split * sizeof(uint64_t));
-    memcpy(hi1->digits, &a->digits[split], (a->length - split) * sizeof(uint64_t));
-    memcpy(hi2->digits, &b->digits[split], (b->length - split) * sizeof(uint64_t));
+    memcpy(lo1->digits, fac1, split * sizeof(uint64_t));
+    memcpy(lo2->digits, fac2, split * sizeof(uint64_t));
+    memcpy(hi1->digits, &fac1[split], (len1 - split) * sizeof(uint64_t));
+    memcpy(hi2->digits, &fac2[split], (len2 - split) * sizeof(uint64_t));
 
-    bignum *z0 = bignum_new(min),
-           *z1 = bignum_new(min),
-           *z2 = bignum_new(a->length - split + b->length - split);
-                         //  = a->len + b->len - floor(min/2)*2
-                         // <= a->len + b->len - min
-                         //  = max(a->len, b->len)
+    // we store z0 in the result
+    bignum *z1 = bignum_new(min),
+           *z2 = bignum_new(max);
 
-    bignum_mul_karatsuba(z0, lo1, lo2);
+    karatsuba_internal(res, reslen, lo1->digits, lo1->length,
+                                    lo2->digits, lo2->length); // z0
     bignum_add(lo1, hi1);
     bignum_add(lo2, hi2);
-    bignum_mul_karatsuba(z1, lo1, lo2);
-    bignum_mul_karatsuba(z2, hi1, hi2);
+    karatsuba_internal(z1->digits, z1->length, lo1->digits, lo1->length,
+                                               lo2->digits, lo2->length); // z1
+    karatsuba_internal(z2->digits, z1->length, &fac1[split], len1 - split,
+                                               &fac2[split], len2 - split); // z2
+
+    sub_internal(z1->digits, z1->length, z1->digits, z1->length, res, reslen);
+    bignum_sub(z1, z1, z2);
+
+    for (int i = 0; i < min; i++) {
+        uint16_t pos = split + i;
+        if (pos >= reslen) break;
+        addat_internal(&res[pos], reslen - pos, z1->digits[i]);
+    }
+    split *= 2;
+    for (int i = 0; i < min; i++) {
+        uint16_t pos = split + i;
+        if (pos >= reslen) break;
+        addat_internal(&res[pos], reslen - pos, z2->digits[i]);
+    }
 
     free(hi1);
     free(lo1);
     free(hi2);
     free(lo2);
-
-    bignum_sub(z1, z1, z2);
-    bignum_sub(z1, z1, z0);
-
-    bignum_copy(result, z0);
-    for (int i = 0; i < min; i++) {
-        if (split + i >= result->length) break;
-        bignum_addat(result, split + i, z1->digits[i]);
-    }
-    split *= 2;
-    for (int i = 0; i < min; i++) {
-        if (split + i >= result->length) break;
-        bignum_addat(result, split + i, z2->digits[i]);
-    }
-
-    free(z0);
     free(z1);
     free(z2);
+}
+
+void bignum_mul_karatsuba(bignum *result, const bignum *a, const bignum *b) {
+    karatsuba_internal(result->digits, result->length, a->digits, a->length,
+                       b->digits, b->length);
 }
 
 // https://youtu.be/iGVZIDQl6m0?t=1231
