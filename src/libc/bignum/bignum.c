@@ -286,6 +286,8 @@ void bignum_mul(bignum *result, const bignum *a, const bignum *b) {
                       b->digits, b->length);
 }
 
+// this is optimized to the point where it's basically unreadable - read the commit
+// history to figure out wtf is happening here
 static void karatsuba_internal(uint64_t *res, uint16_t reslen,
                                const uint64_t *fac1, uint16_t len1,
                                const uint64_t *fac2, uint16_t len2) {
@@ -303,46 +305,41 @@ static void karatsuba_internal(uint64_t *res, uint16_t reslen,
     }
     uint16_t split = min >> 1; // floor(min / 2)
 
-    // those aren't needed
-    bignum *lo1 = bignum_new(split + 1), // +1 to account for when hi1 gets added
-           *lo2 = bignum_new(split + 1); // see above
-
+    // assert split < max    - for storing one of the low parts in z2
+    //    and split < reslen - for storing one of the low parts in res
+    //
+    // the first one can be simplified (assuming that min == max) to
+    // assert floor(min / 2) < min
+    // assert min > 0
+    // and that one shouldn't ever happen
+    // i'm 99% sure that split < reslen is also practically impossible
+    // TODO implement a real assert
+    if (!(split < reslen)) {
+        puts("bignum.c:karatsuba_internal - shit's fucked");
+        exit(0);
+    }
+    
     // we store z0 in the result
     bignum *z1 = bignum_new(min + 1),
            *z2 = bignum_new(max + 1);
 
-    if (debug) {
-        puts("lo");
-        memcpy(lo1->digits, fac1, split * sizeof(uint64_t));
-        memcpy(lo2->digits, fac2, split * sizeof(uint64_t));
-        bignum_print(lo1);
-        bignum_print(lo2);
-    }
+    // lo2 get stored in z2 - bignum_new zeroes it out so we don't have to do it
+    // lo1 gets stored in res - it might contain garbage, so we clean it manually
+    for (int i = split + 1; i < reslen; i++)
+        res[i] = 0;
+
+    add_internal(res, split + 1, fac1, split, &fac1[split], len1 - split);
+    add_internal(z2->digits, split + 1, fac2, split, &fac2[split], len2 - split);
+    karatsuba_internal(z1->digits, z1->length, res, split + 1,
+                                               z2->digits, split + 1); // z1
 
     karatsuba_internal(res, reslen, fac1, split,
                                     fac2, split); // z0
-    add_internal(lo1->digits, split + 1, fac1, split, &fac1[split], len1 - split);
-    add_internal(lo2->digits, split + 1, fac2, split, &fac2[split], len2 - split);
-    karatsuba_internal(z1->digits, z1->length, lo1->digits, lo1->length,
-                                               lo2->digits, lo2->length); // z1
     karatsuba_internal(z2->digits, z1->length, &fac1[split], len1 - split,
                                                &fac2[split], len2 - split); // z2
 
-    if (debug) {
-        puts("z0 z1 z2");
-        bignum_debugprint(res, reslen);
-        bignum_print(z1);
-        bignum_print(z2);
-    }
-
     sub_internal(z1->digits, z1->length, z1->digits, z1->length, res, reslen);
     bignum_sub(z1, z1, z2);
-
-    if (debug) {
-        puts("z1 after");
-        bignum_print(z1);
-        printf("(split %d)\n", split);
-    }
 
     for (int i = 0; i < z1->length; i++) {
         uint16_t pos = split + i;
@@ -356,31 +353,8 @@ static void karatsuba_internal(uint64_t *res, uint16_t reslen,
         addat_internal(&res[pos], reslen - pos, z2->digits[i]);
     }
 
-    free(lo1);
-    free(lo2);
     free(z1);
     free(z2);
-
-    if (debug) {
-        bignum *test = bignum_new(reslen);
-        naivemul_internal(test->digits, reslen, fac1, len1, fac2, len2);
-        for (int i = 0; i < reslen; i++) {
-            if (test->digits[i] != res[i]) {
-                puts("expected");
-                bignum_print(test);
-                memcpy(test->digits, res, reslen * sizeof(uint64_t));
-                puts("got");
-                bignum_print(test);
-                puts("via");
-                bignum_debugprint(fac1, len1);
-                bignum_debugprint(fac2, len2);
-                exit(0);
-                break;
-            }
-        }
-
-        free(test);
-    }
 }
 
 void bignum_mul_karatsuba(bignum *result, const bignum *a, const bignum *b) {
