@@ -5,12 +5,19 @@
 #include <string.h>
 #include <unistd.h>
 
-#define KARATSUBA_THRESHOLD 3
+#define KARATSUBA_THRESHOLD 2
 
 void bignum_zeroout(bignum *a) {
     for (int i = 0; i < a->length; i++) {
         a->digits[i] = 0;
     }
+}
+
+static void bignum_debugprint(const uint64_t *digits, uint16_t len) {
+    bignum *thisisdumb = bignum_new(len);
+    memcpy(thisisdumb->digits, digits, len * sizeof(uint64_t));
+    bignum_print(thisisdumb);
+    free(thisisdumb);
 }
 
 // the size is in an amount of uint64_t, each one is 8 bytes
@@ -266,6 +273,11 @@ static void naivemul_internal(uint64_t *res, uint16_t reslen,
             high = product;
             addat_internal(&res[pos], reslen - pos, high);
         }
+        { // add the last high byte
+            uint16_t pos = i + upper;
+            if (pos < reslen)
+                addat_internal(&res[pos], reslen - pos, low);
+        }
     }
 }
 
@@ -277,6 +289,7 @@ void bignum_mul(bignum *result, const bignum *a, const bignum *b) {
 static void karatsuba_internal(uint64_t *res, uint16_t reslen,
                                const uint64_t *fac1, uint16_t len1,
                                const uint64_t *fac2, uint16_t len2) {
+    bool debug = false;
     if (len1 <= KARATSUBA_THRESHOLD || len2 <= KARATSUBA_THRESHOLD) {
         naivemul_internal(res, reslen, fac1, len1, fac2, len2);
         return;
@@ -290,21 +303,24 @@ static void karatsuba_internal(uint64_t *res, uint16_t reslen,
     }
     uint16_t split = min >> 1; // floor(min / 2)
 
+    // those aren't needed
     bignum *lo1 = bignum_new(split + 1), // +1 to account for when hi1 gets added
            *lo2 = bignum_new(split + 1); // see above
-    // those are unnecessary too
-
-    memcpy(lo1->digits, fac1, split * sizeof(uint64_t));
-    memcpy(lo2->digits, fac2, split * sizeof(uint64_t));
 
     // we store z0 in the result
-    bignum *z1 = bignum_new(min),
-           *z2 = bignum_new(max);
+    bignum *z1 = bignum_new(min + 1),
+           *z2 = bignum_new(max + 1);
 
-    // TODO i need to remove the +1 here, but it causes the result to be wrong
-    // in some rare cases (it shouldn't)
-    karatsuba_internal(res, reslen, lo1->digits, split + 1,
-                                    lo2->digits, split + 1); // z0
+    if (debug) {
+        puts("lo");
+        memcpy(lo1->digits, fac1, split * sizeof(uint64_t));
+        memcpy(lo2->digits, fac2, split * sizeof(uint64_t));
+        bignum_print(lo1);
+        bignum_print(lo2);
+    }
+
+    karatsuba_internal(res, reslen, fac1, split,
+                                    fac2, split); // z0
     add_internal(lo1->digits, split + 1, fac1, split, &fac1[split], len1 - split);
     add_internal(lo2->digits, split + 1, fac2, split, &fac2[split], len2 - split);
     karatsuba_internal(z1->digits, z1->length, lo1->digits, lo1->length,
@@ -312,16 +328,29 @@ static void karatsuba_internal(uint64_t *res, uint16_t reslen,
     karatsuba_internal(z2->digits, z1->length, &fac1[split], len1 - split,
                                                &fac2[split], len2 - split); // z2
 
+    if (debug) {
+        puts("z0 z1 z2");
+        bignum_debugprint(res, reslen);
+        bignum_print(z1);
+        bignum_print(z2);
+    }
+
     sub_internal(z1->digits, z1->length, z1->digits, z1->length, res, reslen);
     bignum_sub(z1, z1, z2);
 
-    for (int i = 0; i < min; i++) {
+    if (debug) {
+        puts("z1 after");
+        bignum_print(z1);
+        printf("(split %d)\n", split);
+    }
+
+    for (int i = 0; i < z1->length; i++) {
         uint16_t pos = split + i;
         if (pos >= reslen) break;
         addat_internal(&res[pos], reslen - pos, z1->digits[i]);
     }
     split *= 2;
-    for (int i = 0; i < min; i++) {
+    for (int i = 0; i < z2->length; i++) {
         uint16_t pos = split + i;
         if (pos >= reslen) break;
         addat_internal(&res[pos], reslen - pos, z2->digits[i]);
@@ -331,6 +360,27 @@ static void karatsuba_internal(uint64_t *res, uint16_t reslen,
     free(lo2);
     free(z1);
     free(z2);
+
+    if (debug) {
+        bignum *test = bignum_new(reslen);
+        naivemul_internal(test->digits, reslen, fac1, len1, fac2, len2);
+        for (int i = 0; i < reslen; i++) {
+            if (test->digits[i] != res[i]) {
+                puts("expected");
+                bignum_print(test);
+                memcpy(test->digits, res, reslen * sizeof(uint64_t));
+                puts("got");
+                bignum_print(test);
+                puts("via");
+                bignum_debugprint(fac1, len1);
+                bignum_debugprint(fac2, len2);
+                exit(0);
+                break;
+            }
+        }
+
+        free(test);
+    }
 }
 
 void bignum_mul_karatsuba(bignum *result, const bignum *a, const bignum *b) {

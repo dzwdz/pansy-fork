@@ -9,6 +9,18 @@ bool test_bignum() {
     bignum *b = bignum_new(8);
     bignum *c = bignum_new(8);
 
+    /*{
+        bignum *a2 = bignum_new(3);
+        bignum *b2 = bignum_new(3);
+        bignum_fromhex(a2, "0100EDCC0FEDEDCB43260000320FEDCC4320EDCCCEA1ADF9");
+        bignum_fromhex(b2, "E951961FAF957DFBE105D49DD93B72C528D5EACD7A6FD034");
+        bignum_mul(c, a2, b2);
+        bignum_print(c);
+        free(a2);
+        free(b2);
+        return true;
+    }*/
+
     bignum_fromhex(a, "1111000022220000333300004444000055550000dEaDbAbE");
     puts("a =");
     bignum_print(a);
