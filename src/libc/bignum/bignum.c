@@ -5,8 +5,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#define KARATSUBA_THRESHOLD 2
-
 void bignum_zeroout(bignum *a) {
     for (int i = 0; i < a->length; i++) {
         a->digits[i] = 0;
@@ -147,18 +145,18 @@ void bignum_modexp_timingsafe(bignum *result, const bignum *base,
                      & (1ull << (i % 64));
 
         // x3 = x1 * x2
-        bignum_mul_karatsuba(x3, x1, x2);
+        bignum_mul(x3, x1, x2);
         if (bit == 0) {
             // x2 = x2 % modules
             bignum_div(x3, modulus, NULL, x2);
-            bignum_mul_karatsuba(x3, x1, x1);
+            bignum_mul(x3, x1, x1);
             // x1 = x1 % modules
             bignum_div(x3, modulus, NULL, x1);
 
         } else {
             // x1 = x1 % modules
             bignum_div(x3, modulus, NULL, x1);
-            bignum_mul_karatsuba(x3, x2, x2);
+            bignum_mul(x3, x2, x2);
             // x2 = x2 % modules
             bignum_div(x3, modulus, NULL, x2);
         }
@@ -284,82 +282,6 @@ static void naivemul_internal(uint64_t *res, uint16_t reslen,
 void bignum_mul(bignum *result, const bignum *a, const bignum *b) {
     naivemul_internal(result->digits, result->length, a->digits, a->length,
                       b->digits, b->length);
-}
-
-// this is optimized to the point where it's basically unreadable - read the commit
-// history to figure out wtf is happening here
-static void karatsuba_internal(uint64_t *res, uint16_t reslen,
-                               const uint64_t *fac1, uint16_t len1,
-                               const uint64_t *fac2, uint16_t len2) {
-    bool debug = false;
-    if (len1 <= KARATSUBA_THRESHOLD || len2 <= KARATSUBA_THRESHOLD) {
-        naivemul_internal(res, reslen, fac1, len1, fac2, len2);
-        return;
-    }
-
-    uint16_t min = len1;
-    uint16_t max = len2;
-    if (max < min) {
-        min = len2;
-        max = len1;
-    }
-    uint16_t split = min >> 1; // floor(min / 2)
-
-    // assert split < max    - for storing one of the low parts in z2
-    //    and split < reslen - for storing one of the low parts in res
-    //
-    // the first one can be simplified (assuming that min == max) to
-    // assert floor(min / 2) < min
-    // assert min > 0
-    // and that one shouldn't ever happen
-    // i'm 99% sure that split < reslen is also practically impossible
-    // TODO implement a real assert
-    if (!(split < reslen)) {
-        puts("bignum.c:karatsuba_internal - shit's fucked");
-        exit(0);
-    }
-    
-    // we store z0 in the result
-    bignum *z1 = bignum_new(min + 1),
-           *z2 = bignum_new(max + 1);
-
-    // lo2 get stored in z2 - bignum_new zeroes it out so we don't have to do it
-    // lo1 gets stored in res - it might contain garbage, so we clean it manually
-    for (int i = split + 1; i < reslen; i++)
-        res[i] = 0;
-
-    add_internal(res, split + 1, fac1, split, &fac1[split], len1 - split);
-    add_internal(z2->digits, split + 1, fac2, split, &fac2[split], len2 - split);
-    karatsuba_internal(z1->digits, z1->length, res, split + 1,
-                                               z2->digits, split + 1); // z1
-
-    karatsuba_internal(res, reslen, fac1, split,
-                                    fac2, split); // z0
-    karatsuba_internal(z2->digits, z1->length, &fac1[split], len1 - split,
-                                               &fac2[split], len2 - split); // z2
-
-    sub_internal(z1->digits, z1->length, z1->digits, z1->length, res, reslen);
-    bignum_sub(z1, z1, z2);
-
-    for (int i = 0; i < z1->length; i++) {
-        uint16_t pos = split + i;
-        if (pos >= reslen) break;
-        addat_internal(&res[pos], reslen - pos, z1->digits[i]);
-    }
-    split *= 2;
-    for (int i = 0; i < z2->length; i++) {
-        uint16_t pos = split + i;
-        if (pos >= reslen) break;
-        addat_internal(&res[pos], reslen - pos, z2->digits[i]);
-    }
-
-    free(z1);
-    free(z2);
-}
-
-void bignum_mul_karatsuba(bignum *result, const bignum *a, const bignum *b) {
-    karatsuba_internal(result->digits, result->length, a->digits, a->length,
-                       b->digits, b->length);
 }
 
 // https://youtu.be/iGVZIDQl6m0?t=1231
