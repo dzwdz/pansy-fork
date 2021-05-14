@@ -7,7 +7,9 @@ _start:
          8 | argv
     argc+8 | envp
     
-    i'm just moving everything to a place that the main() wrapper knows about */
+    i'm just moving everything to a place that the main() wrapper knows about
+    TODO check the effective uid - i think that it's important
+    */
 
     mov  (%rsp), %rdi
     lea 8(%rsp), %rsi
