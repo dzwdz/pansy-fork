@@ -153,15 +153,18 @@ void toggle_echoing() {
 }
 
 void display_lines(struct editor_state e) {
+    // is this bad style?
+#   define LINE_SUFFIX "\r\n\e[K"
     for (size_t i = 0 + e.offset; i < e.max_y + e.offset; i++) {
         if (e.lines[i].length != -1) {
-            printf("%s\r\n", e.lines[i].text);
+            printf("%s" LINE_SUFFIX, e.lines[i].text);
             continue;
         } else {
-            for (; i < e.max_y + e.offset; i++)
-                printf("~\r\n");
+            for (; i < e.max_y + e.offset - 1; i++)
+                printf("~" LINE_SUFFIX);
         }
-    }    
+    }
+#   undef LINE_SUFFIX
 }
 
 int y_pos(struct editor_state e) {
@@ -462,8 +465,6 @@ int main(int argc, char *argv[]) {
         }
 
         /* drawing */
-        // TODO: flickers a lot. Change so it only updates on changes, not cursor movement.
-        clear_screen();
         draw_cursor(0, 0);
         display_lines(E);
 
