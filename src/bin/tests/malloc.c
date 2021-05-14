@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -7,7 +8,7 @@ static const int sizes[] = {
 
 static const int size_amt = 8;
 
-bool test_malloc() {
+void test_malloc() {
     char **ptrs = malloc(size_amt * sizeof(char *));
 
     // first we allocate the memory blocks and fill them with data
@@ -24,15 +25,12 @@ bool test_malloc() {
     for (int i = 0; i < size_amt; i++) {
         int size = sizes[i];
         for (int j = 0; j < size; j++) {
-            if (ptrs[i][j] != i) {
-                return false;
-            }
+            assert(ptrs[i][j] == i);
         }
     }
 
-    // they didn't, let's free them and return success
+    // they didn't, let's free them
     for (int i = 0; i < size_amt; i++) {
         free(ptrs[i]);
     }
-    return true;
 }
