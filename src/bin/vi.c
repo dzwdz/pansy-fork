@@ -52,6 +52,14 @@ void shutdown(struct editor_state *e) {
 }
 
 /* i/o */
+void hide_cursor(void) {
+    printf("\033[?25l");
+}
+
+void show_cursor(void) {
+    printf("\033[?25h");
+}
+
 void draw_cursor(int x, int y) {
     printf("\033[%d;%dH", y+1, x+1);
 }
@@ -351,6 +359,11 @@ bool nm_keyhandler(struct editor_state *e, char key) {
         break;
     case 'o':
         e->y++;
+        /* quick hack to make the buffer scroll if we insert a line at the end
+         * of the viewable buffer. */
+        next_line(e);
+        prev_line(e);
+
         insert_line(e, y_pos(*e));
         e->x = 0;
         e->mode = INSERT;
@@ -364,7 +377,7 @@ bool nm_keyhandler(struct editor_state *e, char key) {
         printf(":");
         char buf[80];
         toggle_echoing();
-        readline(buf, 80); // TODO: doesn't work when pressing enter, only ^J
+        readline(buf, 80);
         toggle_echoing();
 
         return parse_cmd(*e, buf);
@@ -457,14 +470,15 @@ int main(int argc, char *argv[]) {
                 break;
         } else if (E.mode == INSERT) {
             if (!im_keyhandler(&E, c)) {
-                shiftright(E.lines[E.y].text, E.x);
-                E.lines[E.y].text[E.x] = c;
-                E.lines[E.y].length++;
+                shiftright(E.lines[y_pos(E)].text, E.x);
+                E.lines[y_pos(E)].text[E.x] = c;
+                E.lines[y_pos(E)].length++;
                 E.x++;
             }
         }
 
         /* drawing */
+        hide_cursor();
         draw_cursor(0, 0);
         display_lines(E);
 
@@ -477,6 +491,7 @@ int main(int argc, char *argv[]) {
         #endif
 
         draw_cursor(E.x, E.y);
+        show_cursor();
     }
 
     free_lines(E.lines);
