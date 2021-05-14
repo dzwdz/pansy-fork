@@ -1,0 +1,71 @@
+vi - edit files
+
+USAGE
+$ vi [ file ]
+
+DESCRIPTION
+vi is a clone of the POSIX vi editor. It is modal, meaning it operates
+in different modes. There are three modes: normal mode, insert mode
+and command mode. For more information on each, see the following
+sections.
+
+NORMAL MODE
+vi starts up in normal mode. In this mode, every key is interpreted
+as an instruction to the editor. Listed below are all the normal mode
+actions present:
+ - i: Enter insert mode.
+ - I: Move the cursor to the beginning of the current line and enter
+   insert mode.
+ - a: Move the cursor one character to the right and enter insert
+   mode.
+ - A: Move the cursor to the end of the line and enter insert mode.
+ - o: Insert a new line directly below the current line, move down to
+   it and enter insert mode.
+ - :: Enter command mode.
+ - h, j, k l: Move the cursor left, down, up, or right respectively by
+   one character.
+ - w, b: Move the cursor forward or backward respectively by one
+   whitespace delimited word.
+ - 0: Move the cursor to the beginning of the current line.
+ - $: Move the cursor to the end of the current line.
+ - G: Move the cursor to the end of the file buffer.
+ - x: Delete the character at the current cursor position.
+
+Some actions are called motions. Motions are keys that have specific
+behaviour depending on what the following key is. The motions present
+in vi are:
+ - d: Deletion.
+   - Followed by d: Delete the current line.
+   - Followed by j or k: Delete the current line as well as the next
+     or previous line respectively.
+
+INSERT MODE
+In insert mode, every key's value is directly inserted into the
+current file buffer. However, some keys have values that one often
+does not want inserted. These have special functions in insert
+mode. The special keys are as follows:
+ - DEL (often labeled backspace): Delete the character directly to the
+   left of the cursor.
+ - Return: Insert a newline directly below the current line. In the
+   future this will also break the current line in similar fashion to
+   other editors (or vi itself).
+
+COMMAND MODE
+In command mode, the user is presented with a prompt at the bottom of
+the screen beginning with ':'. Here, one can type a range of
+characters before sending a carriage return or newline (by pressing
+return or any other key combinations that does the same) to run the
+commands associated with the letters. These are often special
+commands, like saving the file buffer to disk or exiting vi. Following
+are the commands currently present:
+ - w: Save the file buffer to disk.
+ - q: Exit vi.
+
+vi will run the commands associated with each letter in order. This
+means one can string together actions by combining letters. The
+following example demonstrates this by asking the editor to save the
+current file buffer before exiting.
+    :wq
+
+SEE ALSO
+ed.1
