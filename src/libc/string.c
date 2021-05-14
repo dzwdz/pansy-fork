@@ -44,6 +44,18 @@ char *strncat(char *dest, const char *src, size_t n) {
     return dest;
 }
 
+int memcmp(const void *s1, const void *s2, size_t n) {
+    const unsigned char *c1 = s1, *c2 = s2;
+    for (int i = 0; i < n; i++) {
+        if (c1[i] != c2[i]) {
+            if (c1[i] < c2[i])  return -1;
+            else                return 1;
+        }
+    }
+
+    return 0;
+}
+
 void *memset(void *dest, int c, size_t n) {
     if (n == 0)
         return dest;
