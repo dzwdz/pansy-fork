@@ -1,6 +1,5 @@
-#include <unistd.h>
+#include <tty.h>
 
 int main() {
-    write(STDOUT_FILENO, "\033[2J", 4);
-    write(STDOUT_FILENO, "\033[H", 3);
+    clear_screen();
 }

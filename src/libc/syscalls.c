@@ -4,6 +4,7 @@
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/sysinfo.h>
 #include <unistd.h>
 
 // todo unmess the syscalls
@@ -78,4 +79,8 @@ off_t lseek(int fd, off_t offset, int whence) {
 
 ssize_t getrandom(void *buf, size_t buflen, unsigned int flags) {
     return syscall(SYS_getrandom, buf, buflen, flags);
+}
+
+int sysinfo(struct sysinfo *info) {
+    return syscall(SYS_sysinfo, info);
 }

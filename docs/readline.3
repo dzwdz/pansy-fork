@@ -1,0 +1,29 @@
+## This is a draft for the layout of C library functions.
+## Lines prefixed with 2 '#' symbols are comments.
+
+## Up for change: How should this kind of page be structured? Is this a fine
+## formula?
+
+readline - get a line from standard input
+
+DECLARATION
+void readline(char *buf, size_t size);
+
+DESCRIPTION
+readline will read size bytes from its standard input or until it encounters a
+newline and write these bytes to buf.
+
+EXAMPLE
+    #include <stdio.h>
+    #include <tty.h>
+## Is this the correct #include directive? It's "tty.h" on our development side,
+## but does it change in the system?
+
+    int main(void) {
+        char user_input[256];
+
+        printf("Enter your name: ");
+        readline(user_input, 256);
+
+        printf("Hello, %s!\n", user_input);
+    }

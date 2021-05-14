@@ -7,6 +7,7 @@
 
 union writer_arg {
     int fd;
+    char *out_str;
 };
 
 typedef void (*writer_t)(union writer_arg, const char*, size_t);
@@ -20,6 +21,7 @@ static int __vprintf_internal(writer_t writer, union writer_arg warg,
 
     while (1) {
         unsigned int target_len = 0;
+        bool long_option = false;
 
         char c = *fmt++;
         switch (c) {
@@ -67,9 +69,21 @@ parse_fmt:
                 }
 
                 break;}
+            case 'l': {
+                // yeah yeah it's not good, but it works for now (doesn't handle ll)
+                long_option = true;
+                goto parse_fmt;
+            }
             case 'd': {
                 char c;
-                int n = va_arg(argp, int);
+                /* ints can be converted to longs losslessly */
+                long n;
+                if (long_option) {
+                    long_option = false;
+                    n = va_arg(argp, long);
+                } else {
+                    n = va_arg(argp, int);
+                }
 
                 if (n < 0) {
                     c = '-';
@@ -79,7 +93,7 @@ parse_fmt:
                 }
 
                 // write to string
-                char to_print[10] = {0};
+                char to_print[25] = {0};
                 to_print[0] = '0'; // special case for n == 0
                 int i = 0;
                 while (n != 0) {
@@ -117,6 +131,12 @@ static void file_writer(union writer_arg warg, const char *buf, size_t len) {
     write(warg.fd, buf, len);
 }
 
+static void string_writer(union writer_arg warg, const char *buf, size_t len) {
+    static size_t pos = 0;
+    for (size_t i = 0; i < len; i++)
+        warg.out_str[pos++] = buf[i];
+    if (*buf == '\0') pos = 0;
+}
 
 int printf(const char *fmt, ...) {
     va_list argp;
@@ -135,6 +155,17 @@ int dprintf(int fd, const char *fmt, ...) {
 
     va_start(argp, fmt);
     int printed = __vprintf_internal(file_writer, warg, fmt, argp);
+    va_end(argp);
+
+    return printed;
+}
+
+int sprintf(char *out_str, const char *fmt, ...) {
+    va_list argp;
+    union writer_arg warg = {.out_str = out_str};
+
+    va_start(argp, fmt);
+    int printed = __vprintf_internal(string_writer, warg, fmt, argp);
     va_end(argp);
 
     return printed;

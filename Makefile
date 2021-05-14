@@ -24,7 +24,7 @@ QFLAGS += -device e1000,netdev=net0 -netdev user,id=net0,hostfwd=tcp::1312-:80
 
 # files that the final image depends on
 fs := $(patsubst src/bin/%.c,root/bin/%,$(wildcard src/bin/*.c))
-fs += $(patsubst static/,root/,$(shell find static/))
+fs += $(patsubst static/%,root/%,$(shell find static/))
 fs += root/lib/modules/e1000.ko
 
 initramfs.cpio.gz: $(fs) nested
@@ -82,3 +82,8 @@ src/libc/lowlevel.o: src/libc/lowlevel.s
 src/libc/%.o: src/libc/%.c
 	@${CC} ${CFLAGS} -c $^ -o $@
 
+
+### copy over documentation
+root/docs/%: docs/%
+	@mkdir -p $(@D)
+	@cp $< $@

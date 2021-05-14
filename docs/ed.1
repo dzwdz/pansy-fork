@@ -1,0 +1,42 @@
+ed - edit text
+
+USAGE
+$ ed [ file ]
+
+DESCRIPTION
+ed is a line-oriented text editor. It has two modes; a command mode where input
+is interpreted as commands for actions (described below) and an append mode
+where the input is appended to the file.
+
+EDITING
+In the following descriptions, the apostrophes are added for clarity about what
+the actual command is. Omit these when typing them into ed.
+
+ - Inputting nothing but a newline will display the contents of the file line by
+   line, prefixing each line with its line number.
+ - Typing 'p' and inputting a newline will print out the contents of the file
+   line by line, but without line numbers.
+ - Typing 'a' and inputting a newline  will put you into append mode, where the
+   following lines provided as input will be appended to the file. Writing a
+   line consisting of a single '.' and inputting a newline will add your changes
+   and exit append mode.
+ - Typing 'w' and inputting a newline will write your changes to disk.
+ - Typing 'q' and inputting a newline will quit ed.
+
+Commands can be prefixed with a number or a range in the form x,y where x and y
+are line numbers. This will affect the behaviour of the following command. For
+example, if a file consists of the following lines:
+    foo
+    bar
+    baz
+    quux
+
+Typing '1p' will print
+    bar
+as it is the line in position 1 in the file (line numbers are zero-indexed).
+
+Typing '0,2p' will print
+    foo
+    bar
+    baz
+since 'p' will attempt to print all lines in the range 0 to 2.
