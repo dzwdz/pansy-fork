@@ -1,6 +1,6 @@
 #pragma once
 
-int isprint(unsigned char c);
-int isspace(unsigned char c);
+int isprint(int c);
+int isspace(int c);
 
 // TODO: rest of ctype functions
