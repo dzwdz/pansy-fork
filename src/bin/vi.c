@@ -269,7 +269,7 @@ void d_motion(struct editor_state *e, char c) {
             insert_line(e, 0);
         if (e->x >= e->lines[y_pos(*e)].length)
             goto_eol(e);
-            
+
         break;
     case 'k':
         prev_line(e);
@@ -406,7 +406,7 @@ bool im_keyhandler(struct editor_state *e, char key) {
             prev_line(e);
             goto_eol(e);
             if (e->lines[y_pos(*e)].length)
-                e->x++; 
+                e->x++;
         }
         break;
     case '\r':
@@ -437,7 +437,7 @@ int main(int argc, char *argv[]) {
 
     {
         struct stat tmp;
-    
+
         if (stat(E.filename, &tmp)) { /* file doesn't exist */
             E.lines = create_file();
         } else {
@@ -468,7 +468,7 @@ int main(int argc, char *argv[]) {
         } else if (E.mode == NORMAL) {
             if (!nm_keyhandler(&E, c))
                 break;
-        } else if (E.mode == INSERT) {
+        } else if (E.mode == INSERT && (isprint(c) || isspace(c))) {
             if (!im_keyhandler(&E, c)) {
                 shiftright(E.lines[y_pos(E)].text, E.x);
                 E.lines[y_pos(E)].text[E.x] = c;
