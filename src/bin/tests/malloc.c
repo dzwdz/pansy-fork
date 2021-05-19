@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 static const int sizes[] = {
     2, 100, 2, 10, 100, 10, 2, 23232
@@ -16,9 +17,7 @@ void test_malloc() {
         int size = sizes[i];
         ptrs[i] = malloc(size);
 
-        for (int j = 0; j < size; j++) {
-            ptrs[i][j] = i;
-        }
+        memset(ptrs[i], i, size);
     }
 
     // then we check if they didn't get corrupted
