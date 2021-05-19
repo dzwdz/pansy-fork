@@ -354,6 +354,13 @@ bool nm_keyhandler(struct editor_state *e, char key) {
     case 'x':
         delete_char(e);
         break;
+    case 'r': {
+        char c;
+        read(STDIN_FILENO, &c, 1);
+        if (isprint(c) || isspace(c))
+            e->lines[y_pos(*e)].text[e->x] = c;
+        break;
+    }
     case 'd':
         read(STDIN_FILENO, &c, 1);
         d_motion(e, c);
@@ -427,7 +434,7 @@ bool im_keyhandler(struct editor_state *e, char key) {
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
-        puts("missing file operand.");
+        dprintf(STDERR_FILENO, "vi: Missing file operand.\n");
         return 1;
     }
 
