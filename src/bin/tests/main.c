@@ -4,17 +4,17 @@
 // malloc.c
 void test_malloc();
 
-// bignums.c
-bool test_bignum();
-
-// hashes.c
-bool test_sha256();
-
 // printf.c
 void test_sprintf();
 
 // string.c
 void test_string();
+
+// bignums.c
+void test_bignum();
+
+// hashes.c
+void test_sha();
 
 
 // test runners are supposed to return true on success, false on failure
@@ -28,7 +28,7 @@ struct test_runner runners[] = {
     {"sprintf", &test_sprintf},
     {"string", &test_string},
     {"bignum", &test_bignum},
-    {"sha256", &test_sha256},
+    {"sha", &test_sha},
     {NULL, NULL}
 };
 
