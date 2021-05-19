@@ -28,8 +28,8 @@ int main(int argc, char *argv[]) {
             file = open(*argv, O_RDONLY);
         if (file < 0) {
             // TODO: use errno to give helpful error messages
-            // TODO: print to stderr
-            printf("cat: An error occurred while opening %s.\n", *argv);
+            dprintf(STDERR_FILENO,
+                    "cat: An error occurred while opening %s.\n", *argv);
         } else {
             cat(file);
         }
