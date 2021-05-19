@@ -163,7 +163,8 @@ void toggle_echoing() {
 
 void display_lines(struct editor_state e) {
     // is this bad style?
-#   define LINE_SUFFIX "\r\n\e[K"
+    printf("\033[K");
+#   define LINE_SUFFIX "\r\n\033[K"
     for (size_t i = 0 + e.offset; i < e.max_y + e.offset; i++) {
         if (e.lines[i].length != -1) {
             printf("%s" LINE_SUFFIX, e.lines[i].text);
@@ -354,13 +355,18 @@ bool nm_keyhandler(struct editor_state *e, char key) {
     case 'x':
         delete_char(e);
         break;
-    case 'r': {
-        char c;
+    case 'r':
         read(STDIN_FILENO, &c, 1);
         if (isprint(c) || isspace(c))
             e->lines[y_pos(*e)].text[e->x] = c;
         break;
-    }
+    case 'D': {
+        int chars_to_remove = e->lines[y_pos(*e)].length - e->x;
+        for (int i = 0; i < chars_to_remove; i++)
+            shiftleft(e->lines[y_pos(*e)].text, e->x);
+        e->lines[y_pos(*e)].length -= chars_to_remove;
+        goto_eol(e);
+        break;}
     case 'd':
         read(STDIN_FILENO, &c, 1);
         d_motion(e, c);
