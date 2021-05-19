@@ -19,14 +19,7 @@ resources
 http://tilde.town/~elly/userland.txt
 also, the earlier commits have the resources used in their full messages
 
-todo list
----------
-* a real malloc
-* telnet/ssh/a custom protocol?
-* some crypto stuff
-* a text editor
-* a compiler / interpreter for anything
-* basic fs tools
-* a \_start that's more similar to libc's - apparently checking the effective
-  uid is important?
-* dynamic linker
+what can i do?
+--------------
+    grep -r TODO
+as for the bigger things, [here they are](https://github.com/dzwdz/pansy-fork/projects/2)

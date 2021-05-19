@@ -45,6 +45,18 @@ char *strncat(char *dest, const char *src, size_t n) {
     return dest;
 }
 
+int memcmp(const void *s1, const void *s2, size_t n) {
+    const unsigned char *c1 = s1, *c2 = s2;
+    for (int i = 0; i < n; i++) {
+        if (c1[i] != c2[i]) {
+            if (c1[i] < c2[i])  return -1;
+            else                return 1;
+        }
+    }
+
+    return 0;
+}
+
 // gcc does a galaxy brain move when optimizing our memset
 // it just replaces it with a call to memset, which causes a stack overflow
 // TODO just rewrite this in asm...
@@ -66,7 +78,7 @@ void __attribute__((optimize("O1"))) *memset(void *dest, int cc, size_t n) {
     // now let's save the amount of bytes at the end
     offset = n & 0b111;
     // and write in blocks
-    uint64_t *dd = dest;
+    uint64_t *dd = (void *)d;
     uint64_t block = 0x0101010101010101 * c;
     n >>= 3;
     while (n-- > 0)

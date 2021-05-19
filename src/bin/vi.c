@@ -445,11 +445,7 @@ int main(int argc, char *argv[]) {
     char c;
     while (read(STDIN_FILENO, &c, 1) == 1) {
         /* input */
-        if (c == CTRL_KEY('q')) {
-            break;
-        } else if (c == CTRL_KEY('w')) {
-            /* temporary way of saving until we have a functioning :-menu */
-        } else if (c == ESC && E.mode == INSERT) {
+        if (c == ESC && E.mode == INSERT) {
             E.mode = NORMAL;
             if (E.x > 0)
                 E.x--;
@@ -469,7 +465,6 @@ int main(int argc, char *argv[]) {
         // TODO: flickers a lot. Change so it only updates on changes, not cursor movement.
         clear_screen();
         draw_cursor(0, 0);
-        /* 25 is temporary, switch with E.max_y when it starts working */
         display_lines(E);
 
         #ifndef NDEBUG
