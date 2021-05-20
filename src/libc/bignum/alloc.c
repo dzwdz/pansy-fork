@@ -6,9 +6,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-// the optimal stack size, determined by how i felt at the time
 // TODO measure peak memory usage
-#define STACK_SIZE 8192
+#define STACK_SIZE 10484576
 
 static char *base = NULL;
 static char *min  = NULL;

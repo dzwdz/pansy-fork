@@ -165,14 +165,14 @@ void BN_modexp_timingsafe(bignum *result, const bignum *base,
         if (bit == 0) {
             // x2 = x2 % modules
             BN_div(x3, modulus, NULL, x2);
-            BN_mul(x3, x1, x1);
+            BN_mul_karatsuba(x3, x1, x1);
             // x1 = x1 % modules
             BN_div(x3, modulus, NULL, x1);
 
         } else {
             // x1 = x1 % modules
             BN_div(x3, modulus, NULL, x1);
-            BN_mul(x3, x2, x2);
+            BN_mul_karatsuba(x3, x2, x2);
             // x2 = x2 % modules
             BN_div(x3, modulus, NULL, x2);
         }
@@ -447,7 +447,7 @@ void BN_div(const bignum *dividend, const bignum *divisor,
         while (low <= high) {
             d->digits[0] = (low >> 1) + (high >> 1);
 
-            BN_mul(multiple, d, divisor);
+            BN_mul_karatsuba(multiple, d, divisor);
             int8_t diff = BN_compare(multiple, intermediate);
 
             if (diff < 0) {
