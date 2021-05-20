@@ -1,3 +1,8 @@
+/*
+ * the naming convention:
+ * BN_   functions that accept a bignum*
+ * BNR_  functions that accept raw pointers
+ */
 #include "bignum.h"
 #include <stdbool.h>
 #include <stdlib.h>
@@ -5,30 +10,30 @@
 #include <string.h>
 #include <unistd.h>
 
-void bignum_zeroout(bignum *a) {
+void BN_zeroout(bignum *a) {
     for (int i = 0; i < a->length; i++) {
         a->digits[i] = 0;
     }
 }
 
-static void bignum_debugprint(const uint64_t *digits, uint16_t len) {
-    bignum *thisisdumb = bignum_new(len);
+static void BN_debugprint(const uint64_t *digits, uint16_t len) {
+    bignum *thisisdumb = BN_new(len);
     memcpy(thisisdumb->digits, digits, len * sizeof(uint64_t));
-    bignum_print(thisisdumb);
+    BN_print(thisisdumb);
     free(thisisdumb);
 }
 
 // the size is in an amount of uint64_t, each one is 8 bytes
-bignum* bignum_new(uint16_t size) {  
+bignum* BN_new(uint16_t size) {  
     bignum *b = malloc(sizeof(bignum) + size * sizeof(uint64_t));
     b->length = size;
-    bignum_zeroout(b); // TODO this crashes with optimizations enabled
+    BN_zeroout(b); // TODO this crashes with optimizations enabled
     return b;
 }
 
 // will be replaced by a function that returns a string later on
 // i don't hate this any less than you do
-void bignum_print(const bignum *a) {
+void BN_print(const bignum *a) {
     for (int i = a->length - 1; i >= 0; i--) {
         int j = sizeof(uint64_t) * 8;
         while (j > 0) {
@@ -43,8 +48,8 @@ void bignum_print(const bignum *a) {
 }
 
 // will do very weird things if the input string isn't hex
-void bignum_fromhex(bignum *target, const char *hex) {
-    bignum_zeroout(target);
+void BN_fromhex(bignum *target, const char *hex) {
+    BN_zeroout(target);
 
     int nibble = 0;
     uint64_t digit;
@@ -65,9 +70,9 @@ void bignum_fromhex(bignum *target, const char *hex) {
     }
 }
 
-void bignum_copy(bignum *dest, const bignum *src) {
+void BN_copy(bignum *dest, const bignum *src) {
     // todo optimize
-    bignum_zeroout(dest);
+    BN_zeroout(dest);
 
     // take the minimum of dest->length, src->length
     int to_copy = dest->length;
@@ -77,7 +82,7 @@ void bignum_copy(bignum *dest, const bignum *src) {
     memcpy(dest->digits, src->digits, to_copy * sizeof(uint64_t));
 }
 
-static inline void addat_internal(uint64_t *target, uint16_t len, uint64_t to_add) {
+static inline void BNR_addat(uint64_t *target, uint16_t len, uint64_t to_add) {
     int overflow = __builtin_add_overflow(*target, to_add, target);
 
     while (overflow && --len) {
@@ -86,8 +91,8 @@ static inline void addat_internal(uint64_t *target, uint16_t len, uint64_t to_ad
     }
 }
 
-static inline void bignum_addat(bignum *target, uint16_t pos, uint64_t to_add) {
-    addat_internal(&target->digits[pos], target->length - pos, to_add);
+static inline void BN_addat(bignum *target, uint16_t pos, uint64_t to_add) {
+    BNR_addat(&target->digits[pos], target->length - pos, to_add);
 }
 
 // returns the index of the last nonzero digit + 1
@@ -95,7 +100,7 @@ static inline void bignum_addat(bignum *target, uint16_t pos, uint64_t to_add) {
 //     0 < x < 2**64   = 1
 // 2**64 < x < 2**128  = 2
 // etc
-uint16_t bignum_order(const bignum *bn) {
+uint16_t BN_order(const bignum *bn) {
     for (int i = bn->length - 1; i >= 0; i--) {
         if (bn->digits[i] != 0)
             return i + 1;
@@ -103,8 +108,8 @@ uint16_t bignum_order(const bignum *bn) {
     return 0;
 }
 
-uint64_t bignum_log2(const bignum *bn) {
-    uint16_t order = bignum_order(bn);
+uint64_t BN_log2(const bignum *bn) {
+    uint16_t order = BN_order(bn);
     if (order == 0) return 0;
 
     uint64_t digit = bn->digits[order - 1];
@@ -123,53 +128,53 @@ uint64_t bignum_log2(const bignum *bn) {
 
 // slower that regular modexp, but more secure against timing attacks
 // https://en.wikipedia.org/wiki/Exponentiation_by_squaring#Montgomery's_ladder_technique
-void bignum_modexp_timingsafe(bignum *result, const bignum *base,
+void BN_modexp_timingsafe(bignum *result, const bignum *base,
                               const bignum *power, const bignum *modulus) {
-    uint16_t order1 = bignum_order(base),
-             order2 = bignum_order(modulus);
+    uint16_t order1 = BN_order(base),
+             order2 = BN_order(modulus);
     // order2 is the max
     if (order1 < order2) order1 = order2;
     order1  = order1 * order1 + 1;
     order1 *= sizeof(uint64_t);
 
-    bignum *x1 = bignum_new(order1);
-    bignum_copy(x1, base);
-    bignum *x2 = bignum_new(order1);
-    bignum_mul(x2, base, base);
+    bignum *x1 = BN_new(order1);
+    BN_copy(x1, base);
+    bignum *x2 = BN_new(order1);
+    BN_mul(x2, base, base);
 
-    bignum *x3 = bignum_new(order1); // temporary var
+    bignum *x3 = BN_new(order1); // temporary var
 
-    uint64_t bits = bignum_log2(power);
+    uint64_t bits = BN_log2(power);
     for (int i = bits - 2; i >= 0; i--) {
         uint64_t bit = power->digits[i / 64]
                      & (1ull << (i % 64));
 
         // x3 = x1 * x2
-        bignum_mul(x3, x1, x2);
+        BN_mul(x3, x1, x2);
         if (bit == 0) {
             // x2 = x2 % modules
-            bignum_div(x3, modulus, NULL, x2);
-            bignum_mul(x3, x1, x1);
+            BN_div(x3, modulus, NULL, x2);
+            BN_mul(x3, x1, x1);
             // x1 = x1 % modules
-            bignum_div(x3, modulus, NULL, x1);
+            BN_div(x3, modulus, NULL, x1);
 
         } else {
             // x1 = x1 % modules
-            bignum_div(x3, modulus, NULL, x1);
-            bignum_mul(x3, x2, x2);
+            BN_div(x3, modulus, NULL, x1);
+            BN_mul(x3, x2, x2);
             // x2 = x2 % modules
-            bignum_div(x3, modulus, NULL, x2);
+            BN_div(x3, modulus, NULL, x2);
         }
     }
 
-    bignum_copy(result, x1);
+    BN_copy(result, x1);
 
     free(x1);
     free(x2);
     free(x3);
 }
 
-static void add_internal(uint64_t *res, uint16_t reslen,
+static void BNR_add(uint64_t *res, uint16_t reslen,
                          const uint64_t *num1, uint16_t len1,
                          const uint64_t *num2, uint16_t len2) {
     bool overflow = false;
@@ -190,12 +195,12 @@ static void add_internal(uint64_t *res, uint16_t reslen,
     }
 }
 
-void bignum_add(bignum *result, const bignum *a, const bignum *b) {
-    add_internal(result->digits, result->length, a->digits, a->length,
+void BN_add(bignum *result, const bignum *a, const bignum *b) {
+    BNR_add(result->digits, result->length, a->digits, a->length,
                  b->digits, b->length);
 }
 
-static void sub_internal(uint64_t *res, uint16_t reslen,
+static void BNR_sub(uint64_t *res, uint16_t reslen,
                          const uint64_t *num1, uint16_t len1,
                          const uint64_t *num2, uint16_t len2) {
     bool overflow = false;
@@ -216,15 +221,15 @@ static void sub_internal(uint64_t *res, uint16_t reslen,
     }
 }
 
-void bignum_sub(bignum *result, const bignum *a, const bignum *b) {
-    sub_internal(result->digits, result->length, a->digits, a->length,
+void BN_sub(bignum *result, const bignum *a, const bignum *b) {
+    BNR_sub(result->digits, result->length, a->digits, a->length,
                  b->digits, b->length);
 }
 
 // returns -1 if a < b
 //          0 if a = b
 //          1 if a > b
-int8_t bignum_compare (const bignum *a, const bignum *b) {
+int8_t BN_compare (const bignum *a, const bignum *b) {
     // handle numbers of different sizes
     if (a->length < b->length) {
         for (int i = a->length; i < b->length; i++) {
@@ -245,7 +250,7 @@ int8_t bignum_compare (const bignum *a, const bignum *b) {
     return 0;
 }
 
-static void naivemul_internal(uint64_t *res, uint16_t reslen,
+static void BNR_mul_naive(uint64_t *res, uint16_t reslen,
                               const uint64_t *fac1, uint16_t len1,
                               const uint64_t *fac2, uint16_t len2) {
     memset(res, 0, reslen * sizeof(uint64_t)); // zeroout
@@ -259,7 +264,7 @@ static void naivemul_internal(uint64_t *res, uint16_t reslen,
         uint64_t low = 0, high;
         for (uint16_t j = 0; j < upper; j++) { // potential overflow
             uint16_t pos = j + i;
-            addat_internal(&res[pos], reslen - pos, low);
+            BNR_addat(&res[pos], reslen - pos, low);
 
             if (fac2[j] == 0) {
                 low = 0;
@@ -269,18 +274,18 @@ static void naivemul_internal(uint64_t *res, uint16_t reslen,
             __int128 product = (__int128)(fac1[i]) * (__int128)(fac2[j]);
             low  = product >> 64;
             high = product;
-            addat_internal(&res[pos], reslen - pos, high);
+            BNR_addat(&res[pos], reslen - pos, high);
         }
         { // add the last high byte
             uint16_t pos = i + upper;
             if (pos < reslen)
-                addat_internal(&res[pos], reslen - pos, low);
+                BNR_addat(&res[pos], reslen - pos, low);
         }
     }
 }
 
-void bignum_mul(bignum *result, const bignum *a, const bignum *b) {
-    naivemul_internal(result->digits, result->length, a->digits, a->length,
+void BN_mul(bignum *result, const bignum *a, const bignum *b) {
+    BNR_mul_naive(result->digits, result->length, a->digits, a->length,
                       b->digits, b->length);
 }
 
@@ -289,21 +294,21 @@ void bignum_mul(bignum *result, const bignum *a, const bignum *b) {
 // shoutouts to the author
 //
 // the quotient is optional
-void bignum_div(const bignum *dividend, const bignum *divisor,
+void BN_div(const bignum *dividend, const bignum *divisor,
         bignum *quotient, bignum *remainder) {
 
-    int dividend_order = bignum_order(dividend);
-    int divisor_order = bignum_order(divisor);
+    int dividend_order = BN_order(dividend);
+    int divisor_order = BN_order(divisor);
 
     // assert divisor_order != 0
 
     if (quotient != NULL)
-        bignum_zeroout(quotient);
+        BN_zeroout(quotient);
 
     // is the dividend has less digits than the dividend, we can just skip
     // the whole math
     if (dividend_order < divisor_order) {
-        bignum_copy(remainder, dividend);
+        BN_copy(remainder, dividend);
         return;
     }
 
@@ -311,15 +316,15 @@ void bignum_div(const bignum *dividend, const bignum *divisor,
     // the most significant digit of the dividend is at [dividend_order - 1]
     //     if we're taking 1 digit we'd start at [dividend_order - 1], copy 1
     //                     2 digits              [dividend_order - 2], copy 2
-    bignum_zeroout(remainder);
+    BN_zeroout(remainder);
     memcpy(remainder->digits, &dividend->digits[dividend_order - (divisor_order - 1)], (divisor_order - 1) * sizeof(uint64_t));
 
-    bignum *intermediate = bignum_new(divisor_order + 2);
-    bignum *d = bignum_new(1);
-    bignum *multiple = bignum_new(divisor_order + 2);
+    bignum *intermediate = BN_new(divisor_order + 2);
+    bignum *d = BN_new(1);
+    bignum *multiple = BN_new(divisor_order + 2);
 
     for (int i = 0; i <= dividend_order - divisor_order; i++) {
-        bignum_zeroout(intermediate);
+        BN_zeroout(intermediate);
         // the least significant digit is the [divisor_order + i]th ms one of
         // the dividend
         intermediate->digits[0] =
@@ -335,8 +340,8 @@ void bignum_div(const bignum *dividend, const bignum *divisor,
         while (low <= high) {
             d->digits[0] = (low >> 1) + (high >> 1);
 
-            bignum_mul(multiple, d, divisor);
-            int8_t diff = bignum_compare(multiple, intermediate);
+            BN_mul(multiple, d, divisor);
+            int8_t diff = BN_compare(multiple, intermediate);
 
             if (diff < 0) {
                 low = d->digits[0] + 1;
@@ -353,9 +358,9 @@ void bignum_div(const bignum *dividend, const bignum *divisor,
             quotient->digits[dividend_order - divisor_order - i] = d->digits[0];
 
         // remainder = intermediate - d * divisor
-        bignum_copy(remainder, intermediate);
-        bignum_mul(multiple, d, divisor);
-        bignum_sub(remainder, remainder, multiple);
+        BN_copy(remainder, intermediate);
+        BN_mul(multiple, d, divisor);
+        BN_sub(remainder, remainder, multiple);
     }
 
     free(intermediate);
@@ -363,15 +368,15 @@ void bignum_div(const bignum *dividend, const bignum *divisor,
     free(multiple);
 }
 
-void bignum_random(const bignum *lower, const bignum *upper, bignum *target) {
-    bignum *tmp = bignum_new(upper->length);
+void BN_random(const bignum *lower, const bignum *upper, bignum *target) {
+    bignum *tmp = BN_new(upper->length);
 
-    bignum *range = bignum_new(upper->length);
-    bignum_sub(range, upper, lower);
+    bignum *range = BN_new(upper->length);
+    BN_sub(range, upper, lower);
 
     getentropy(tmp->digits, tmp->length * sizeof(uint64_t));
-    bignum_div(tmp, range, NULL, target);
-    bignum_add(target, target, lower);
+    BN_div(tmp, range, NULL, target);
+    BN_add(target, target, lower);
 
     free(tmp);
     free(range);

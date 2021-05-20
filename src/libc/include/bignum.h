@@ -6,31 +6,31 @@ typedef struct {
     uint64_t digits[];
 } bignum;
 
-bignum* bignum_new(uint16_t size);
-void bignum_zeroout(bignum *a);
-void bignum_fromhex(bignum *target, const char *hex);
-void bignum_print(const bignum *a);
+bignum* BN_new(uint16_t size);
+void BN_zeroout(bignum *a);
+void BN_fromhex(bignum *target, const char *hex);
+void BN_print(const bignum *a);
 
-void bignum_mul(bignum *result, const bignum *a, const bignum *b);
-void bignum_div(const bignum *dividend, const bignum *divisor,
+void BN_mul(bignum *result, const bignum *a, const bignum *b);
+void BN_div(const bignum *dividend, const bignum *divisor,
         bignum *quotient, bignum *remainder);
-void bignum_add(bignum *result, const bignum *a, const bignum *b);
-void bignum_sub(bignum *result, const bignum *a, const bignum *b);
+void BN_add(bignum *result, const bignum *a, const bignum *b);
+void BN_sub(bignum *result, const bignum *a, const bignum *b);
 
-uint16_t bignum_order(const bignum *bn);
-uint64_t bignum_log2(const bignum *bn);
+uint16_t BN_order(const bignum *bn);
+uint64_t BN_log2(const bignum *bn);
 
-void bignum_modexp_timingsafe(bignum *result, const bignum *base,
+void BN_modexp_timingsafe(bignum *result, const bignum *base,
                               const bignum *power, const bignum *modulus);
 
 // returns -1 if a < b
 //          0 if a = b
 //          1 if a > b
-int8_t bignum_compare (const bignum *a, const bignum *b);
+int8_t BN_compare (const bignum *a, const bignum *b);
 
-static inline uint8_t *bignum_byteat(bignum *bn, uint16_t pos) {
+static inline uint8_t *BN_byteat(bignum *bn, uint16_t pos) {
     return (uint8_t*)bn->digits + pos;
 }
 
 // biased, and also probably vulnerable to timing attacks
-void bignum_random(const bignum *lower, const bignum *upper, bignum *target);
+void BN_random(const bignum *lower, const bignum *upper, bignum *target);

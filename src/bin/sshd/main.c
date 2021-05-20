@@ -75,9 +75,9 @@ int main() {
 
 
     // temp benchmark
-    bignum *cl_pub  = bignum_new(33), // must be as big as the DH prime
-           *our_pub = bignum_new(33),
-           *shared  = bignum_new(33);
+    bignum *cl_pub  = BN_new(33), // must be as big as the DH prime
+           *our_pub = BN_new(33),
+           *shared  = BN_new(33);
 
     diffie_hellman_group14(cl_pub, our_pub, shared);
 

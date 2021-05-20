@@ -43,13 +43,13 @@ static void prepare_identities() {
     p4[-1] = '\0';
 
     int len = strlen(buf) / 2 / 8 + 1; // slapping a 1 there for good measure
-    HOST_N = bignum_new(len);
-    HOST_E = bignum_new(1);
-    HOST_D = bignum_new(len);
+    HOST_N = BN_new(len);
+    HOST_E = BN_new(1);
+    HOST_D = BN_new(len);
 
-    bignum_fromhex(HOST_N, buf);
-    bignum_fromhex(HOST_E, p2);
-    bignum_fromhex(HOST_D, p3);
+    BN_fromhex(HOST_N, buf);
+    BN_fromhex(HOST_E, p2);
+    BN_fromhex(HOST_D, p3);
 
     close(fd);
     free(buf);
@@ -69,12 +69,12 @@ static void prepare_identities() {
 
 void diffie_hellman_group14(const bignum *cl_pub, bignum *our_pub,
                             bignum *shared_secret) {
-    bignum *our_secret = bignum_new(256 / 8);
-    bignum_random(ONE, DH14P, our_secret);
-    bignum_random(ONE, DH14P, cl_pub); // TODO if this makes it to a commit i'm dumb
+    bignum *our_secret = BN_new(256 / 8);
+    BN_random(ONE, DH14P, our_secret);
+    BN_random(ONE, DH14P, cl_pub); // TODO if this makes it to a commit i'm dumb
 
-    bignum_modexp_timingsafe(our_pub, TWO, our_secret, DH14P);
-    bignum_modexp_timingsafe(shared_secret, cl_pub, our_secret, DH14P);
+    BN_modexp_timingsafe(our_pub, TWO, our_secret, DH14P);
+    BN_modexp_timingsafe(shared_secret, cl_pub, our_secret, DH14P);
 
     free(our_secret);
 }
@@ -83,12 +83,12 @@ void init_crypto() {
     prepare_identities();
 
     // RFC 3526 / 3.
-    DH14P = bignum_new(256 / 8);
-    bignum_fromhex(DH14P, "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B139B22514A08798E3404DDEF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7EDEE386BFB5A899FA5AE9F24117C4B1FE649286651ECE45B3DC2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F83655D23DCA3AD961C62F356208552BB9ED529077096966D670C354E4ABC9804F1746C08CA18217C32905E462E36CE3BE39E772C180E86039B2783A2EC07A28FB5C55DF06F4C52C9DE2BCBF6955817183995497CEA956AE515D2261898FA051015728E5A8AACAA68FFFFFFFFFFFFFFFF");
+    DH14P = BN_new(256 / 8);
+    BN_fromhex(DH14P, "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B139B22514A08798E3404DDEF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7EDEE386BFB5A899FA5AE9F24117C4B1FE649286651ECE45B3DC2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F83655D23DCA3AD961C62F356208552BB9ED529077096966D670C354E4ABC9804F1746C08CA18217C32905E462E36CE3BE39E772C180E86039B2783A2EC07A28FB5C55DF06F4C52C9DE2BCBF6955817183995497CEA956AE515D2261898FA051015728E5A8AACAA68FFFFFFFFFFFFFFFF");
 
-    ONE = bignum_new(1);
-    bignum_fromhex(ONE, "1");
+    ONE = BN_new(1);
+    BN_fromhex(ONE, "1");
 
-    TWO = bignum_new(1);
-    bignum_fromhex(TWO, "2");
+    TWO = BN_new(1);
+    BN_fromhex(TWO, "2");
 }
