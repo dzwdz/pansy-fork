@@ -31,6 +31,20 @@ void test_bignum() {
     }
 
     {
+        bignum *of = BN_new(4);
+        BN_fromhex(of,
+                "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+
+        BN_add(c, of, of);
+        BN_fromhex(expected,
+                "1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFe");
+        assert(BN_compare(c, expected) == 0);
+
+        BN_sub(c, c, of);
+        assert(BN_compare(c, of) == 0);
+    }
+
+    {
         BN_debug_setkt(3);
 
         int a_og = a->length,
