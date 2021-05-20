@@ -238,25 +238,47 @@ void BN_add(bignum *result, const bignum *a, const bignum *b) {
                  b->digits, b->length);
 }
 
+inline void __BNR_sub_loop_body(uint64_t *res, int i, bool *overflow, 
+        uint64_t dA, uint64_t dB) {
+    if (*overflow) {
+        if (dB == (uint64_t) ~0) { // untested
+            res[i] = dA;
+            return;
+        }
+        dB++;
+        *overflow = false;
+    }
+    *overflow = __builtin_sub_overflow(dA, dB, &res[i]);
+}
+
 static void BNR_sub(uint64_t *res, uint16_t reslen,
                          const uint64_t *num1, uint16_t len1,
                          const uint64_t *num2, uint16_t len2) {
     bool overflow = false;
-    uint64_t dA, dB;
-    for (int i = 0; i < reslen; i++) {
-        dA = (i < len1) ? num1[i] : 0;
-        dB = (i < len2) ? num2[i] : 0;
+    int i = 0;
 
-        if (overflow) {
-            if (dB == (uint64_t) ~0) { // untested
-                res[i] = dA;
-                continue;
-            }
-            dB++;
-            overflow = false;
-        }
-        overflow = __builtin_sub_overflow(dA, dB, &res[i]);
+    uint16_t min = (len1 < len2) ? len1 : len2;
+    if (reslen < min) min = reslen;
+    for (; i < min; i++) {
+        __BNR_sub_loop_body(res, i, &overflow,
+                num1[i], num2[i]);
     }
+
+    if (min != len1) { // num1 has digits remaining
+        min = (len1 < reslen) ? len1 : reslen;
+        for (; i < min; i++) {
+            __BNR_sub_loop_body(res, i, &overflow,
+                     num1[i], 0);
+        }
+    } else if (min != len2) { // num2 has digits remaining
+        min = (len2 < reslen) ? len2 : reslen;
+        for (; i < min; i++)
+            __BNR_sub_loop_body(res, i, &overflow,
+                     0, num2[i]);
+    }
+
+    if (i >= reslen) return;
+    memset(&res[i], overflow ? 0xFF : 0, (reslen - i) * sizeof(uint64_t));
 }
 
 void BN_sub(bignum *result, const bignum *a, const bignum *b) {
