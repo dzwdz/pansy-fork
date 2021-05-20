@@ -4,6 +4,7 @@
  * BNR_  functions that accept raw pointers
  */
 #include "bignum.h"
+#include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -324,17 +325,29 @@ static void BNR_mul_naive(uint64_t *res, uint16_t reslen,
         uint64_t low = 0, high;
         for (uint16_t j = 0; j < upper; j++) { // potential overflow
             uint16_t pos = j + i;
-            BNR_addat(&res[pos], reslen - pos, low);
-
-            if (fac2[j] == 0) {
-                low = 0;
-                continue;
-            }
+            uint64_t overflow = __builtin_add_overflow(low, res[pos], &res[pos]);
 
             __int128 product = (__int128)(fac1[i]) * (__int128)(fac2[j]);
             low  = product >> 64;
             high = product;
-            BNR_addat(&res[pos], reslen - pos, high);
+            low += overflow;
+
+            /*
+             *  you can safely ignore this comment, unless you're messing with this function
+             *  it's badly written too, so you won't miss out on anything
+             *
+             *  when multiplying ~0 * ~0
+             *  low == ~0 - 1
+             *  if adding last low overflowed, overflow == 1
+             *  so this low == ~0
+             *  thus if this overflows too, low will overflow and the assert will fail
+             *  actually, i don't think that it's possible
+             *  because high == 1
+             *  so res[pos] would have to == ~0
+             *  which would not be possible to have when overflowing with just a single add
+             */
+            overflow = __builtin_add_overflow(high, res[pos], &res[pos]);
+            assert(__builtin_add_overflow(overflow, low, &low) == 0);
         }
         { // add the last high byte
             uint16_t pos = i + upper;
