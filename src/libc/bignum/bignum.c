@@ -10,6 +10,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#define KARATSUBA_THRESHOLD 1
+
 void BN_zeroout(bignum *a) {
     for (int i = 0; i < a->length; i++) {
         a->digits[i] = 0;
@@ -289,6 +291,94 @@ void BN_mul(bignum *result, const bignum *a, const bignum *b) {
                       b->digits, b->length);
 }
 
+void BNR_mul_karatsuba(uint64_t *res, uint16_t reslen,
+                              const uint64_t *fac1, uint16_t len1,
+                              const uint64_t *fac2, uint16_t len2) {
+    uint16_t min_len = len1,
+             max_len = len2;
+    if (min_len > max_len) {
+        min_len = len2;
+        max_len = len1;
+    }
+    if (min_len <= KARATSUBA_THRESHOLD) {
+        BNR_mul_naive(res, reslen, fac1, len1, fac2, len2);
+        return;
+    }
+    uint16_t split = min_len >> 1; // amt of high digits that we take
+
+    bignum *z0 = BN_new(split * 2),
+           *z1 = BN_new(len1 + len2 - split * 2 + 1),
+           *z2 = BN_new(len1 + len2 - split * 2);
+    bignum *d1 = BN_new(len1 - split + 1),
+           *d2 = BN_new(len2 - split + 1);
+
+    BNR_mul_karatsuba(z0->digits,   z0->length,
+                      fac1,         split,
+                      fac2,         split);
+    BNR_mul_karatsuba(z2->digits,   z2->length,
+                      &fac1[split], len1 - split,
+                      &fac2[split], len2 - split);
+    BNR_add          (d1->digits,   d1->length,
+                      fac1,         split,
+                      &fac1[split], len1 - split);
+    BNR_add          (d2->digits,   d2->length,
+                      fac2,         split,
+                      &fac2[split], len2 - split);
+    BN_mul           (z1, d1, d2);
+    BN_sub           (z1, z1, z0);
+    BN_sub           (z1, z1, z2);
+
+    BNR_mul_naive(res, reslen, fac1, len1, fac2, len2);
+
+    if (reslen < z0->length) {
+        memcpy(res, z0->digits, sizeof(uint64_t) * reslen);
+        goto finish;
+    }
+
+    // TODO BNR_cpy
+    memcpy(res, z0->digits, sizeof(uint64_t) * z0->length);
+    memset(&res[z0->length], 0, sizeof(uint64_t) * (reslen - z0->length));
+
+    if (reslen < split) // impossible
+        goto finish;
+    BNR_add(&res[split], reslen - split,
+            &res[split], reslen - split,
+            z1->digits,  z1->length);
+
+    if (reslen < split * 2) // also impossible - left here so i don't forget
+                            // to check bounds when refactoring
+        goto finish;
+    BNR_add(&res[split * 2], reslen - (split * 2),
+            &res[split * 2], reslen - (split * 2),
+            z2->digits,       z2->length);
+
+    finish:
+    /*
+       puts("\n\n");
+       BN_debugprint(fac1, len1);
+       BN_debugprint(fac2, len2);
+       BN_print(d2);
+       printf("z (split %d)\n", split);
+       BN_print(z0);
+       BN_print(z1);
+       BN_print(z2);
+       puts("=");
+       BN_debugprint(res, reslen);
+    // */
+
+    free(z0);
+    free(z1);
+    free(z2);
+    free(d1);
+    free(d2);
+}
+
+void BN_mul_karatsuba(bignum *result, const bignum *a, const bignum *b) {
+    BNR_mul_karatsuba(result->digits, result->length,
+                      a->digits, a->length,
+                      b->digits, b->length);
+}
+
 // https://youtu.be/iGVZIDQl6m0?t=1231
 // i'm ripping this algorithm off a youtube video
 // shoutouts to the author
@@ -359,7 +449,7 @@ void BN_div(const bignum *dividend, const bignum *divisor,
 
         // remainder = intermediate - d * divisor
         BN_copy(remainder, intermediate);
-        BN_mul(multiple, d, divisor);
+        BN_mul_karatsuba(multiple, d, divisor);
         BN_sub(remainder, remainder, multiple);
     }
 

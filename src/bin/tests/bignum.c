@@ -5,9 +5,9 @@
 #include <stdio.h>
 
 void test_bignum() {
-    bignum *a = BN_new(3);
-    bignum *asqr = BN_new(6);
-    bignum *b = BN_new(3);
+    bignum *a = BN_new(8);
+    bignum *asqr = BN_new(8);
+    bignum *b = BN_new(8);
     bignum *c = BN_new(8);
 
     bignum *expected = BN_new(8);
@@ -26,6 +26,23 @@ void test_bignum() {
         BN_fromhex(expected,
             "1122246acceef3812008a067868cf7f897bbfa34ca09621f56438211a49116e75274e2dd9ca21167161a18421599c36");
         assert(BN_compare(c, expected) == 0);
+    }
+
+    {
+        int a_og = a->length,
+            b_og = b->length;
+        for (int i = BN_order(a); i <= a_og; i++) {
+            a->length = i;
+            for (int j = BN_order(b); j <= b_og; j++) {
+                b->length = j;
+                BN_mul_karatsuba(c, a, b);
+                BN_fromhex(expected,
+                    "1122246acceef3812008a067868cf7f897bbfa34ca09621f56438211a49116e75274e2dd9ca21167161a18421599c36");
+                assert(BN_compare(c, expected) == 0);
+            }
+        }
+        a->length = a_og;
+        b->length = b_og;
     }
 
     { // b ** b (mod a ** 2)

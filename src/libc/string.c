@@ -62,6 +62,9 @@ int memcmp(const void *s1, const void *s2, size_t n) {
 // TODO just rewrite this in asm...
 // also this isn't fully tested
 void __attribute__((optimize("O1"))) *memset(void *dest, int cc, size_t n) {
+    if (n == 0)
+        return dest;
+
     uint8_t c = cc;
     uint8_t *d = dest;
     uint8_t offset;

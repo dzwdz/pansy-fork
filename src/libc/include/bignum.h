@@ -12,10 +12,15 @@ void BN_fromhex(bignum *target, const char *hex);
 void BN_print(const bignum *a);
 
 void BN_mul(bignum *result, const bignum *a, const bignum *b);
+void BN_mul_karatsuba(bignum *result, const bignum *a, const bignum *b);
 void BN_div(const bignum *dividend, const bignum *divisor,
         bignum *quotient, bignum *remainder);
 void BN_add(bignum *result, const bignum *a, const bignum *b);
 void BN_sub(bignum *result, const bignum *a, const bignum *b);
+
+void BNR_mul_karatsuba(uint64_t *res, uint16_t reslen,
+                              const uint64_t *fac1, uint16_t len1,
+                              const uint64_t *fac2, uint16_t len2);
 
 uint16_t BN_order(const bignum *bn);
 uint64_t BN_log2(const bignum *bn);
