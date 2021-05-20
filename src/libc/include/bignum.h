@@ -1,3 +1,15 @@
+/* WARNING
+ * this is EXTREMELY unsafe when used with threads
+ * if you're writing anything with threads, be 100% sure that only one thread
+ * uses the bignum functions
+ * it doesn't matter if another thread would be operating on completely different
+ * data - currently, everything uses a shared buffer
+ *
+ * why? laziness
+ * if you need to use those in multiple threads, or if anything breaks, reach
+ * out to me
+ *     ~dzwdz
+ */
 #pragma once
 #include <stdint.h>
 

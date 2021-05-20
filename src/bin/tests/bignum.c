@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+void BN_debug_setkt(uint16_t new);
+
 void test_bignum() {
     bignum *a = BN_new(8);
     bignum *asqr = BN_new(8);
@@ -29,6 +31,8 @@ void test_bignum() {
     }
 
     {
+        BN_debug_setkt(3);
+
         int a_og = a->length,
             b_og = b->length;
         for (int i = BN_order(a); i <= a_og; i++) {
