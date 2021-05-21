@@ -22,6 +22,8 @@ typedef struct {
     uint64_t digits[];
 } bignum;
 
+
+
 /** primitives.c **/
 
 // returns sign(a - b)
@@ -51,26 +53,40 @@ void BNR_mul_naive(uint64_t *res, uint16_t reslen,
 
 
 
-/** not organized yet **/
+/** karatsuba.c **/
+void BN_mul_karatsuba(bignum *result, const bignum *a, const bignum *b);
+void BNR_mul_karatsuba(uint64_t *res, uint16_t reslen,
+                       const uint64_t *fac1, uint16_t len1,
+                       const uint64_t *fac2, uint16_t len2);
 
+
+
+/** division.c **/
+void BN_div(const bignum *dividend, const bignum *divisor,
+            bignum *quotient, bignum *remainder);
+void BN_modexp_timingsafe(bignum *result, const bignum *base,
+                          const bignum *power, const bignum *modulus);
+
+
+/** alloc.c **/
+#ifdef _BN_INTERNAL
+#   include <stddef.h>
+    void *BNA_alloc(size_t size);
+    void  BNA_push();
+    void  BNA_pop();
+#endif
+
+
+/** bignum.c **/
 bignum* BN_new(uint16_t size);
 void BN_zeroout(bignum *a);
 void BN_fromhex(bignum *target, const char *hex);
 void BN_print(const bignum *a);
-
-void BN_mul_karatsuba(bignum *result, const bignum *a, const bignum *b);
-void BN_div(const bignum *dividend, const bignum *divisor,
-        bignum *quotient, bignum *remainder);
-
-void BNR_mul_karatsuba(uint64_t *res, uint16_t reslen,
-                              const uint64_t *fac1, uint16_t len1,
-                              const uint64_t *fac2, uint16_t len2);
+void BN_copy(bignum *dest, const bignum *src);
 
 
-void BN_modexp_timingsafe(bignum *result, const bignum *base,
-                              const bignum *power, const bignum *modulus);
 
-
+/** here, duh **/
 static inline uint8_t *BN_byteat(bignum *bn, uint16_t pos) {
     return (uint8_t*)bn->digits + pos;
 }

@@ -1,5 +1,6 @@
 /* a terrible idea
  * will shit itself if you ever use multiple threads
+ * TODO adapt into a general purpose arena library
  */
 
 #include <assert.h>
