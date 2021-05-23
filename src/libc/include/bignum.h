@@ -36,27 +36,13 @@ uint64_t BN_log2(const bignum bn);
 void BN_random(const bignum lower, const bignum upper, bignum target);
 
 void BN_add(bignum result, const bignum a, const bignum b);
-void BNR_add(uint64_t *res,        uint16_t reslen,
-             const uint64_t *num1, uint16_t len1,
-             const uint64_t *num2, uint16_t len2);
-
 void BN_sub(bignum result, const bignum a, const bignum b);
-void BNR_sub(uint64_t *res, uint16_t reslen,
-             const uint64_t *num1, uint16_t len1,
-             const uint64_t *num2, uint16_t len2);
-
 void BN_mul(bignum result, const bignum a, const bignum b);
-void BNR_mul_naive(uint64_t *res, uint16_t reslen,
-                   const uint64_t *fac1, uint16_t len1,
-                   const uint64_t *fac2, uint16_t len2);
 
 
 
 /** karatsuba.c **/
 void BN_mul_karatsuba(bignum result, const bignum a, const bignum b);
-void BNR_mul_karatsuba(uint64_t *res, uint16_t reslen,
-                       const uint64_t *fac1, uint16_t len1,
-                       const uint64_t *fac2, uint16_t len2);
 
 
 
@@ -71,6 +57,7 @@ void BN_modexp_timingsafe(bignum result, const bignum base,
 #ifdef _BN_INTERNAL
 #   include <stddef.h>
     void *BNA_alloc(size_t size);
+    bignum BNA_newBN(uint16_t length);
     void  BNA_push();
     void  BNA_pop();
 #endif

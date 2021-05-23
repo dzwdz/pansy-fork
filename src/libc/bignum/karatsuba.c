@@ -10,86 +10,68 @@ void BN_debug_setkt(uint16_t new) {
 }
 
 
-void BNR_mul_karatsuba(uint64_t *res, uint16_t reslen,
-                              const uint64_t *fac1, uint16_t len1,
-                              const uint64_t *fac2, uint16_t len2) {
-    uint16_t min_len = len1,
-             max_len = len2;
+void BN_mul_karatsuba(bignum result, const bignum a, const bignum b) {
+    uint16_t min_len = a.length,
+             max_len = b.length;
     if (min_len > max_len) {
-        min_len = len2;
-        max_len = len1;
+        min_len = b.length;
+        max_len = a.length;
     }
     if (min_len <= KARATSUBA_THRESHOLD) {
-        BNR_mul_naive(res, reslen, fac1, len1, fac2, len2);
+        BN_mul(result, a, b);
         return;
     }
     uint16_t split = min_len >> 1; // amt of high digits that we take
     BNA_push();
 
-    uint16_t z0l = split * 2,
-             z1l = len1 + len2 - split * 2 + 1,
-             z2l = len1 + len2 - split * 2,
-             d1l = len1 - split + 1,
-             d2l = len2 - split + 1;
-    uint64_t *z0 = BNA_alloc(z0l * sizeof(uint64_t)),
-             *z1 = BNA_alloc(z1l * sizeof(uint64_t)),
-             *z2 = BNA_alloc(z2l * sizeof(uint64_t)),
-             *d1 = BNA_alloc(d1l * sizeof(uint64_t)),
-             *d2 = BNA_alloc(d2l * sizeof(uint64_t));
+    bignum z0 = BNA_newBN(split * 2),
+           z1 = BNA_newBN(a.length + b.length - split * 2 + 1),
+           z2 = BNA_newBN(a.length + b.length - split * 2),
+           d1 = BNA_newBN(a.length - split + 1),
+           d2 = BNA_newBN(b.length - split + 1);
 
-    BNR_mul_karatsuba(z0,           z0l,
-                      fac1,         split,
-                      fac2,         split);
-    BNR_mul_karatsuba(z2,           z2l,
-                      &fac1[split], len1 - split,
-                      &fac2[split], len2 - split);
-    BNR_add          (d1,           d1l,
-                      fac1,         split,
-                      &fac1[split], len1 - split);
-    BNR_add          (d2,           d2l,
-                      fac2,         split,
-                      &fac2[split], len2 - split);
-    BNR_mul_karatsuba(z1, z1l,
-                      d1, d1l,
-                      d2, d2l);
-    BNR_sub          (z1, z1l,
-                      z1, z1l,
-                      z0, z0l);
-    BNR_sub          (z1, z1l,
-                      z1, z1l,
-                      z2, z2l);
+    // split up the factors
+    bignum low1 = {.digits = a.digits,         .length = split},
+           low2 = {.digits = b.digits,         .length = split},
+           hi1  = {.digits = &a.digits[split], .length = a.length - split},
+           hi2  = {.digits = &b.digits[split], .length = b.length - split};
 
-    BNR_mul_naive(res, reslen, fac1, len1, fac2, len2);
+    BN_mul_karatsuba(z0, low1, low2);
+    BN_mul_karatsuba(z2, hi1, hi2);
+    BN_add(d1, low1, hi1);
+    BN_add(d2, low2, hi2);
+    BN_mul_karatsuba(z1, d1, d2);
+    BN_sub(z1, z1, z0);
+    BN_sub(z1, z1, z2);
 
-    if (reslen < z0l) {
-        memcpy(res, z0, sizeof(uint64_t) * reslen);
+    if (result.length < z0.length) {
+        memcpy(result.digits, z0.digits, sizeof(uint64_t) * result.length);
         goto finish;
     }
 
-    // TODO BNR_cpy
-    memcpy(res, z0, sizeof(uint64_t) * z0l);
-    memset(&res[z0l], 0, sizeof(uint64_t) * (reslen - z0l));
+    // TODO BN_cpy
+    memcpy(result.digits, z0.digits, sizeof(uint64_t) * z0.length);
+    memset(&result.digits[z0.length], 0, sizeof(uint64_t) *
+            (result.length - z0.length));
 
-    if (reslen < split) // impossible
+    if (result.length < split) // impossible
         goto finish;
-    BNR_add(&res[split], reslen - split,
-            &res[split], reslen - split,
-            z1,  z1l);
+    // what a shit variable name
+    bignum up = {
+        .digits = &result.digits[split],
+        .length = result.length - split
+    };
+    BN_add(up, up, z1);
 
-    if (reslen < split * 2) // also impossible - left here so i don't forget
-        goto finish;        // to check bounds when refactoring
-    BNR_add(&res[split * 2], reslen - (split * 2),
-            &res[split * 2], reslen - (split * 2),
-            z2,       z2l);
+    if (result.length < split * 2) // also impossible - left here so i don't forget
+        goto finish;               // to check bounds when refactoring
+    up = (bignum) {
+        .digits = &result.digits[split * 2],
+        .length = result.length - (split * 2)
+    };
+    BN_add(up, up, z2);
 
     finish:
-
     BNA_pop();
-}
-
-void BN_mul_karatsuba(bignum result, const bignum a, const bignum b) {
-    BNR_mul_karatsuba(result.digits, result.length,
-                      a.digits, a.length,
-                      b.digits, b.length);
 }
 

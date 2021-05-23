@@ -4,6 +4,7 @@
  */
 
 #include <assert.h>
+#include <bignum.h>
 #include <stddef.h>
 #include <stdlib.h>
 
@@ -27,6 +28,13 @@ void *BNA_alloc(size_t size) {
     top += size;
     assert(top <= max);
     return top - size;
+}
+
+bignum BNA_newBN(uint16_t length) {
+    return (bignum){
+        .digits = BNA_alloc(length * sizeof(uint64_t)),
+        .length = length
+    };
 }
 
 void BNA_push() {

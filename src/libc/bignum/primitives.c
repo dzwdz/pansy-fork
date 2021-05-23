@@ -81,44 +81,36 @@ inline void __BNR_add_loop_body(uint64_t *res, int i, bool *overflow,
 }
 
 // sorry for this mess
-void BNR_add(uint64_t *res, uint16_t reslen,
-             const uint64_t *num1, uint16_t len1,
-             const uint64_t *num2, uint16_t len2) {
+void BN_add(bignum result, const bignum a, const bignum b) {
     bool overflow = false;
     int i = 0;
 
-    uint16_t min = (len1 < len2) ? len1 : len2;
-    if (reslen < min) min = reslen;
+    uint16_t min = (a.length < b.length) ? a.length : b.length;
+    if (result.length < min) min = result.length;
     for (; i < min; i++) {
-        __BNR_add_loop_body(res, i, &overflow,
-                num1[i], num2[i]);
+        __BNR_add_loop_body(result.digits, i, &overflow,
+                a.digits[i], b.digits[i]);
     }
 
-    if (min != len1) { // num1 has digits remaining
-        min = (len1 < reslen) ? len1 : reslen;
+    if (min != a.length) { // a.digits has digits remaining
+        min = (a.length < result.length) ? a.length : result.length;
         for (; i < min; i++) {
-            __BNR_add_loop_body(res, i, &overflow,
-                     num1[i], 0);
+            __BNR_add_loop_body(result.digits, i, &overflow,
+                     a.digits[i], 0);
         }
-    } else if (min != len2) { // num2 has digits remaining
-        min = (len2 < reslen) ? len2 : reslen;
+    } else if (min != b.length) { // b.digits has digits remaining
+        min = (b.length < result.length) ? b.length : result.length;
         for (; i < min; i++)
-            __BNR_add_loop_body(res, i, &overflow,
-                     0, num2[i]);
+            __BNR_add_loop_body(result.digits, i, &overflow,
+                     0, b.digits[i]);
     }
 
-    if (i >= reslen) return;
+    if (i >= result.length) return;
     if (overflow) {
-        res[i] = 1;
+        result.digits[i] = 1;
         i++;
     }
-    memset(&res[i], 0, (reslen - i) * sizeof(uint64_t));
-}
-
-void BN_add(bignum result, const bignum a, const bignum b) {
-    BNR_add(result.digits, result.length,
-            a.digits, a.length,
-            b.digits, b.length);
+    memset(&result.digits[i], 0, (result.length - i) * sizeof(uint64_t));
 }
 
 
@@ -128,92 +120,75 @@ inline void __BNR_sub_loop_body(uint64_t *res, int i, bool *overflow,
     *overflow += __builtin_sub_overflow(dA, dB, &res[i]);
 }
 
-void BNR_sub(uint64_t *res, uint16_t reslen,
-             const uint64_t *num1, uint16_t len1,
-             const uint64_t *num2, uint16_t len2) {
+void BN_sub(bignum result, const bignum a, const bignum b) {
     bool overflow = false;
     int i = 0;
 
-    uint16_t min = (len1 < len2) ? len1 : len2;
-    if (reslen < min) min = reslen;
+    uint16_t min = (a.length < b.length) ? a.length : b.length;
+    if (result.length < min) min = result.length;
     for (; i < min; i++) {
-        __BNR_sub_loop_body(res, i, &overflow,
-                num1[i], num2[i]);
+        __BNR_sub_loop_body(result.digits, i, &overflow,
+                a.digits[i], b.digits[i]);
     }
 
-    if (min != len1) { // num1 has digits remaining
-        min = (len1 < reslen) ? len1 : reslen;
+    if (min != a.length) { // a.digits has digits remaining
+        min = (a.length < result.length) ? a.length : result.length;
         for (; i < min; i++) {
-            __BNR_sub_loop_body(res, i, &overflow,
-                     num1[i], 0);
+            __BNR_sub_loop_body(result.digits, i, &overflow,
+                     a.digits[i], 0);
         }
-    } else if (min != len2) { // num2 has digits remaining
-        min = (len2 < reslen) ? len2 : reslen;
+    } else if (min != b.length) { // b.digits has digits remaining
+        min = (b.length < result.length) ? b.length : result.length;
         for (; i < min; i++)
-            __BNR_sub_loop_body(res, i, &overflow,
-                     0, num2[i]);
+            __BNR_sub_loop_body(result.digits, i, &overflow,
+                     0, b.digits[i]);
     }
 
-    if (i >= reslen) return;
-    memset(&res[i], overflow ? 0xFF : 0, (reslen - i) * sizeof(uint64_t));
-}
-
-void BN_sub(bignum result, const bignum a, const bignum b) {
-    BNR_sub(result.digits, result.length,
-            a.digits,      a.length,
-            b.digits,      b.length);
+    if (i >= result.length) return;
+    memset(&result.digits[i], overflow ? 0xFF : 0, (result.length - i) * sizeof(uint64_t));
 }
 
 
-void BNR_mul_naive(uint64_t *res, uint16_t reslen,
-                   const uint64_t *fac1, uint16_t len1,
-                   const uint64_t *fac2, uint16_t len2) {
-    memset(res, 0, reslen * sizeof(uint64_t)); // zeroout
+void BN_mul(bignum result, const bignum a, const bignum b) {
+    BN_zeroout(result);
 
-    for (uint16_t i = 0; i < len1; i++) {
-        if (fac1[i] == 0) continue;
+    for (uint16_t i = 0; i < a.length; i++) {
+        if (a.digits[i] == 0) continue;
         
-        uint16_t upper = reslen - i;
-        if (len2 < upper) upper = len2;
+        uint16_t upper = result.length - i;
+        if (b.length < upper) upper = b.length;
 
         uint64_t low = 0, high;
         for (uint16_t j = 0; j < upper; j++) { // potential overflow
             uint16_t pos = j + i;
-            uint64_t overflow = __builtin_add_overflow(low, res[pos], &res[pos]);
+            uint64_t overflow = __builtin_add_overflow(low, result.digits[pos],
+                    &result.digits[pos]);
 
-            __int128 product = (__int128)(fac1[i]) * (__int128)(fac2[j]);
+            __int128 product = (__int128)(a.digits[i]) * (__int128)(b.digits[j]);
             low  = product >> 64;
             high = product;
-            low += overflow;
+            low += overflow; // refer to comment below
 
-            /*
-             *  you can safely ignore this comment, unless you're messing with this function
-             *  it's badly written too, so you won't miss out on anything
-             *
-             *  when multiplying ~0 * ~0
-             *  low == ~0 - 1
-             *  if adding last low overflowed, overflow == 1
-             *  so this low == ~0
-             *  thus if this overflows too, low will overflow and the assert will fail
-             *  actually, i don't think that it's possible
-             *  because high == 1
-             *  so res[pos] would have to == ~0
-             *  which would not be possible to have when overflowing with just a single add
-             */
-            overflow = __builtin_add_overflow(high, res[pos], &res[pos]);
+            overflow = __builtin_add_overflow(high, result.digits[pos], &result.digits[pos]);
             assert(__builtin_add_overflow(overflow, low, &low) == 0);
         }
         { // add the last high byte
             uint16_t pos = i + upper;
-            if (pos < reslen)
-                BNR_addat(&res[pos], reslen - pos, low);
+            if (pos < result.length)
+                BNR_addat(&result.digits[pos], result.length - pos, low);
         }
     }
 }
 
-void BN_mul(bignum result, const bignum a, const bignum b) {
-    BNR_mul_naive(result.digits, result.length,
-                  a.digits,      a.length,
-                  b.digits,      b.length);
-}
-
+/*  you can safely ignore this comment unless you're working on BN_mul
+ *
+ *  when multiplying ~0 * ~0
+ *  low == ~0 - 1
+ *  if adding last low overflowed, overflow == 1
+ *  so this low == ~0
+ *  thus if this overflows too, low will overflow and the assert will fail
+ *  actually, i don't think that it's possible
+ *  because high == 1
+ *  so res[pos] would have to == ~0
+ *  which would not be possible to have when overflowing with just a single add
+ */
