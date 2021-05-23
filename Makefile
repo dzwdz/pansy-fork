@@ -3,6 +3,7 @@ export # make sure sub-makes get all our vars
 
 CC     ?= gcc
 CFLAGS := ${CFLAGS}
+CFLAGS += -fno-stack-protector
 CFLAGS += -nostdlib -static
 CFLAGS += -Wall -Wextra
 CFLAGS += -g
