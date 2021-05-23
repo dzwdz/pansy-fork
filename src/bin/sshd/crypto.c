@@ -9,14 +9,14 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-bignum *HOST_N; // modulus
-bignum *HOST_E; // public exponent
-bignum *HOST_D; // private exponent
+bignum HOST_N; // modulus
+bignum HOST_E; // public exponent
+bignum HOST_D; // private exponent
 iter_t HOST_KEY;
 
-bignum *DH14P;
-bignum *ONE;
-bignum *TWO;
+bignum DH14P;
+bignum ONE; // TODO unnecessary
+bignum TWO;
 
 static void prepare_identities() {
     // assert HOST_N == null
@@ -67,16 +67,16 @@ static void prepare_identities() {
     HOST_KEY.max = HOST_KEY.pos;
 }
 
-void diffie_hellman_group14(const bignum *cl_pub, bignum *our_pub,
-                            bignum *shared_secret) {
-    bignum *our_secret = BN_new(256 / 8);
+void diffie_hellman_group14(const bignum cl_pub, bignum our_pub,
+                            bignum shared_secret) {
+    bignum our_secret = BN_new(256 / 8);
     BN_random(ONE, DH14P, our_secret);
     BN_random(ONE, DH14P, cl_pub); // TODO if this makes it to a commit i'm dumb
 
     BN_modexp_timingsafe(our_pub, TWO, our_secret, DH14P);
     BN_modexp_timingsafe(shared_secret, cl_pub, our_secret, DH14P);
 
-    free(our_secret);
+    BN_free(our_secret);
 }
 
 void init_crypto() {

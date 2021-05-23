@@ -5,20 +5,25 @@
 #include <unistd.h>
 
 // the size is in an amount of uint64_t, each one is 8 bytes
-bignum* BN_new(uint16_t size) {  
-    bignum *b = malloc(sizeof(bignum) + size * sizeof(uint64_t));
-    b->length = size;
+bignum BN_new(uint16_t size) {  
+    bignum b;
+    b.digits = malloc(sizeof(bignum) + size * sizeof(uint64_t));
+    b.length = size;
     BN_zeroout(b);
     return b;
 }
 
-void BN_zeroout(bignum *a) {
-    for (int i = 0; i < a->length; i++) {
-        a->digits[i] = 0;
+void BN_free(bignum bn) {
+    free(bn.digits);
+}
+
+void BN_zeroout(bignum a) {
+    for (int i = 0; i < a.length; i++) {
+        a.digits[i] = 0;
     }
 }
 
-void BN_fromhex(bignum *target, const char *hex) {
+void BN_fromhex(bignum target, const char *hex) {
     BN_zeroout(target);
 
     int nibble = 0;
@@ -34,7 +39,7 @@ void BN_fromhex(bignum *target, const char *hex) {
         int byte = (nibble >> 1) & 0b111;
         digit <<= 8 * byte;
 
-        target->digits[nibble >> 4] |= digit;
+        target.digits[nibble >> 4] |= digit;
 
         nibble++;
     }
@@ -42,13 +47,13 @@ void BN_fromhex(bignum *target, const char *hex) {
 
 // will be replaced by a function that returns a string later on
 // i don't hate this any less than you do
-void BN_print(const bignum *a) {
-    for (int i = a->length - 1; i >= 0; i--) {
+void BN_print(const bignum a) {
+    for (int i = a.length - 1; i >= 0; i--) {
         // TODO add uint64_t support to printf
         int j = sizeof(uint64_t) * 8;
         while (j > 0) {
             j -= 4;
-            char c = '0' + ((a->digits[i] >> j) & 0xf);
+            char c = '0' + ((a.digits[i] >> j) & 0xf);
             if (c > '9') c += 'A' - '9' - 1;
             write(1, &c, 1);
         }
@@ -57,23 +62,15 @@ void BN_print(const bignum *a) {
     puts("");
 }
 
-static void BN_debugprint(const uint64_t *digits, uint16_t len) {
-    // TODO lmao what the fuck was i doing
-    bignum *thisisdumb = BN_new(len);
-    memcpy(thisisdumb->digits, digits, len * sizeof(uint64_t));
-    BN_print(thisisdumb);
-    free(thisisdumb);
-}
-
-void BN_copy(bignum *dest, const bignum *src) {
+void BN_copy(bignum dest, const bignum src) {
     // TODO optimize
     BN_zeroout(dest);
 
-    // take the minimum of dest->length, src->length
-    int to_copy = dest->length;
-    if (src->length < to_copy)
-        to_copy = src->length;
+    // take the minimum of dest.length, src.length
+    int to_copy = dest.length;
+    if (src.length < to_copy)
+        to_copy = src.length;
 
-    memcpy(dest->digits, src->digits, to_copy * sizeof(uint64_t));
+    memcpy(dest.digits, src.digits, to_copy * sizeof(uint64_t));
 }
 

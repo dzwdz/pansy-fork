@@ -7,14 +7,14 @@
 void BN_debug_setkt(uint16_t new);
 
 void test_bignum() {
-    bignum *a = BN_new(8);
-    bignum *asqr = BN_new(8);
-    bignum *b = BN_new(8);
-    bignum *c = BN_new(8);
-    bignum *d = BN_new(8);
-    bignum *e = BN_new(8);
+    bignum a = BN_new(8);
+    bignum asqr = BN_new(8);
+    bignum b = BN_new(8);
+    bignum c = BN_new(8);
+    bignum d = BN_new(8);
+    bignum e = BN_new(8);
 
-    bignum *expected = BN_new(8);
+    bignum expected = BN_new(8);
 
     BN_fromhex(a, "1111000022220000333300004444000055550000dEaDbAbE");
     BN_fromhex(b, "1010123412341234f00d00001234123412341234100c0cc5");
@@ -58,20 +58,20 @@ void test_bignum() {
     {
         BN_debug_setkt(3);
 
-        int a_og = a->length,
-            b_og = b->length;
+        int a_og = a.length,
+            b_og = b.length;
         for (int i = BN_order(a); i <= a_og; i++) {
-            a->length = i;
+            a.length = i;
             for (int j = BN_order(b); j <= b_og; j++) {
-                b->length = j;
+                b.length = j;
                 BN_mul_karatsuba(c, a, b);
                 BN_fromhex(expected,
                     "1122246acceef3812008a067868cf7f897bbfa34ca09621f56438211a49116e75274e2dd9ca21167161a18421599c36");
                 assert(BN_compare(c, expected) == 0); // karatsuba
             }
         }
-        a->length = a_og;
-        b->length = b_og;
+        a.length = a_og;
+        b.length = b_og;
     }
 
     { // b ** b (mod a ** 2)
@@ -82,11 +82,11 @@ void test_bignum() {
         assert(BN_compare(c, expected) == 0); // modexp
     }
 
-    free(a);
-    free(asqr);
-    free(b);
-    free(c);
-    free(d);
-    free(e);
-    free(expected);
+    BN_free(a);
+    BN_free(asqr);
+    BN_free(b);
+    BN_free(c);
+    BN_free(d);
+    BN_free(e);
+    BN_free(expected);
 }

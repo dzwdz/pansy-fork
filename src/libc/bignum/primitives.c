@@ -5,22 +5,26 @@
 #include <unistd.h> // getentropy()
 #include <stdlib.h> // malloc & free, should be removed (BNA)
 
+const bignum BN_NULL = {
+    .length = 0,
+    .digits = NULL
+};
 
 // returns sign(a - b)
-int8_t BN_compare (const bignum *a, const bignum *b) {
-    if (a->length < b->length) {
-        for (int i = a->length; i < b->length; i++) {
-            if (b->digits[i] != 0) return -1;
+int8_t BN_compare (const bignum a, const bignum b) {
+    if (a.length < b.length) {
+        for (int i = a.length; i < b.length; i++) {
+            if (b.digits[i] != 0) return -1;
         }
-    } else if (b->length < a->length) {
-        for (int i = b->length; i < a->length; i++) {
-            if (a->digits[i] != 0) return -1;
+    } else if (b.length < a.length) {
+        for (int i = b.length; i < a.length; i++) {
+            if (a.digits[i] != 0) return -1;
         }
     }
 
-    for (int i = a->length - 1; i >= 0; i--) {
-        if (a->digits[i] == b->digits[i]) continue;
-        if (a->digits[i] <  b->digits[i]) return -1;
+    for (int i = a.length - 1; i >= 0; i--) {
+        if (a.digits[i] == b.digits[i]) continue;
+        if (a.digits[i] <  b.digits[i]) return -1;
         else                              return  1;
     }
 
@@ -28,19 +32,19 @@ int8_t BN_compare (const bignum *a, const bignum *b) {
 }
 
 
-uint16_t BN_order(const bignum *bn) {
-    for (int i = bn->length - 1; i >= 0; i--) {
-        if (bn->digits[i] != 0)
+uint16_t BN_order(const bignum bn) {
+    for (int i = bn.length - 1; i >= 0; i--) {
+        if (bn.digits[i] != 0)
             return i + 1;
     }
     return 0;
 }
 
-uint64_t BN_log2(const bignum *bn) {
+uint64_t BN_log2(const bignum bn) {
     uint16_t order = BN_order(bn);
     if (order == 0) return 0;
 
-    uint64_t digit = bn->digits[order - 1];
+    uint64_t digit = bn.digits[order - 1];
     uint64_t bits = order * sizeof(uint64_t) * 8;
 
     // we know that digit must not equal 0
@@ -55,18 +59,18 @@ uint64_t BN_log2(const bignum *bn) {
 }
 
 
-void BN_random(const bignum *lower, const bignum *upper, bignum *target) {
-    bignum *tmp = BN_new(upper->length);
+void BN_random(const bignum lower, const bignum upper, bignum target) {
+    bignum tmp = BN_new(upper.length);
 
-    bignum *range = BN_new(upper->length);
+    bignum range = BN_new(upper.length);
     BN_sub(range, upper, lower);
 
-    getentropy(tmp->digits, tmp->length * sizeof(uint64_t));
-    BN_div(tmp, range, NULL, target);
+    getentropy(tmp.digits, tmp.length * sizeof(uint64_t));
+    BN_div(tmp, range, BN_NULL, target);
     BN_add(target, target, lower);
 
-    free(tmp);
-    free(range);
+    BN_free(tmp);
+    BN_free(range);
 }
 
 
@@ -111,10 +115,10 @@ void BNR_add(uint64_t *res, uint16_t reslen,
     memset(&res[i], 0, (reslen - i) * sizeof(uint64_t));
 }
 
-void BN_add(bignum *result, const bignum *a, const bignum *b) {
-    BNR_add(result->digits, result->length,
-            a->digits, a->length,
-            b->digits, b->length);
+void BN_add(bignum result, const bignum a, const bignum b) {
+    BNR_add(result.digits, result.length,
+            a.digits, a.length,
+            b.digits, b.length);
 }
 
 
@@ -154,10 +158,10 @@ void BNR_sub(uint64_t *res, uint16_t reslen,
     memset(&res[i], overflow ? 0xFF : 0, (reslen - i) * sizeof(uint64_t));
 }
 
-void BN_sub(bignum *result, const bignum *a, const bignum *b) {
-    BNR_sub(result->digits, result->length,
-            a->digits,      a->length,
-            b->digits,      b->length);
+void BN_sub(bignum result, const bignum a, const bignum b) {
+    BNR_sub(result.digits, result.length,
+            a.digits,      a.length,
+            b.digits,      b.length);
 }
 
 
@@ -207,9 +211,9 @@ void BNR_mul_naive(uint64_t *res, uint16_t reslen,
     }
 }
 
-void BN_mul(bignum *result, const bignum *a, const bignum *b) {
-    BNR_mul_naive(result->digits, result->length,
-                  a->digits,      a->length,
-                  b->digits,      b->length);
+void BN_mul(bignum result, const bignum a, const bignum b) {
+    BNR_mul_naive(result.digits, result.length,
+                  a.digits,      a.length,
+                  b.digits,      b.length);
 }
 

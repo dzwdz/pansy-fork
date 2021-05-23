@@ -84,17 +84,17 @@ iter_t pop_string(iter_t *iter) {
 }
 
 // crashes when the client sends a mpint that's too large to fit in the target
-void pop_bignum(iter_t *iter, bignum* target) {
+void pop_bignum(iter_t *iter, bignum target) {
     // TODO negatives
     uint32_t len = pop_uint32(iter);
-    if ((len > target->length * sizeof(uint64_t))
+    if ((len > target.length * sizeof(uint64_t))
      || (iter->pos + len > iter->max)) exit(1);
 
     // a mess
     BN_zeroout(target);
     for (uint32_t i = 0; i < len; i++) {
         int reverse = len - i - 1;
-        target->digits[reverse / 8]
+        target.digits[reverse / 8]
             |= ((uint64_t)(iter->base[iter->pos + i]  & 0xff) << 8 * (reverse % 8));
     }
 
@@ -139,7 +139,7 @@ void push_cstring(iter_t *iter, const char *str) {
 // places], so it's safe
 #pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
 
-void push_bignum(iter_t *iter, const bignum *bn) {
+void push_bignum(iter_t *iter, const bignum bn) {
     int log2 = BN_log2(bn);
     int bytes = (log2 >> 3) + ((log2 & 0b111) ? 1 : 0);
     // TODO support negative bignums

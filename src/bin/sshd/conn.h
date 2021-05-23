@@ -24,14 +24,14 @@ void send_packet(connection *conn, iter_t packet);
 uint8_t pop_byte(iter_t *iter);
 uint32_t pop_uint32(iter_t *iter);
 iter_t pop_string(iter_t *iter);
-void pop_bignum(iter_t *iter, bignum* target);
+void pop_bignum(iter_t *iter, bignum target);
 
 void push_byte(iter_t *iter, uint8_t val);
 void push_uint32(iter_t *iter, uint32_t val);
 void push_string(iter_t *iter, void *buf, uint32_t size);
 void push_cstring(iter_t *iter, const char *str);
 void push_iter(iter_t *target, iter_t val);
-void push_bignum(iter_t *iter, const bignum *bn);
+void push_bignum(iter_t *iter, const bignum bn);
 
 bool namelist_has(iter_t haystack, const char *needle);
 

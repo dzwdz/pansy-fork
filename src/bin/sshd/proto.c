@@ -119,9 +119,9 @@ void algo_negotiation(connection *conn) {
 // RFC 4253 / 8.
 // diffie-hellman-group14-sha256
 void key_exchange(connection *conn) {
-    bignum *cl_pub  = BN_new(33), // must be as big as the DH prime
-           *our_pub = BN_new(33),
-           *shared  = BN_new(33);
+    bignum cl_pub  = BN_new(33), // must be as big as the DH prime
+           our_pub = BN_new(33),
+           shared  = BN_new(33);
 
     { // 1. the client sends us E, we do the DH math
         iter_t packet = read_packet(conn);
@@ -174,7 +174,7 @@ void key_exchange(connection *conn) {
     }
     puts("4done");
 
-    free(cl_pub);
-    free(our_pub);
-    free(shared);
+    BN_free(cl_pub);
+    BN_free(our_pub);
+    BN_free(shared);
 }

@@ -87,9 +87,9 @@ void BNR_mul_karatsuba(uint64_t *res, uint16_t reslen,
     BNA_pop();
 }
 
-void BN_mul_karatsuba(bignum *result, const bignum *a, const bignum *b) {
-    BNR_mul_karatsuba(result->digits, result->length,
-                      a->digits, a->length,
-                      b->digits, b->length);
+void BN_mul_karatsuba(bignum result, const bignum a, const bignum b) {
+    BNR_mul_karatsuba(result.digits, result.length,
+                      a.digits, a.length,
+                      b.digits, b.length);
 }
 
