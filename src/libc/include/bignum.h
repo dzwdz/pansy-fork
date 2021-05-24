@@ -11,6 +11,7 @@
  *     ~dzwdz
  */
 #pragma once
+#include <stdbool.h>
 #include <stdint.h>
 
 typedef struct {
@@ -36,7 +37,7 @@ uint64_t BN_log2(const bignum bn);
 void BN_random(const bignum lower, const bignum upper, bignum target);
 
 void BN_add(bignum result, const bignum a, const bignum b);
-void BN_sub(bignum result, const bignum a, const bignum b);
+bool BN_sub(bignum result, const bignum a, const bignum b);
 void BN_mul(bignum result, const bignum a, const bignum b);
 
 
@@ -87,3 +88,12 @@ static inline void BNR_addat(uint64_t *target, uint16_t len, uint64_t to_add) {
     }
 }
 
+static inline bignum BN_amputate(bignum bn, uint16_t diff) {
+    if (diff > bn.length)
+        return (bignum) {.length = 0, .digits = 0};
+
+    return (bignum) {
+        .length = bn.length - diff,
+        .digits = &bn.digits[diff]
+    };
+}

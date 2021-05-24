@@ -5,7 +5,7 @@ CC     ?= gcc
 CFLAGS := ${CFLAGS}
 CFLAGS += -nostdlib -static
 CFLAGS += -Wall -Wextra
-CFLAGS += -g
+CFLAGS += -g -lgcc
 CFLAGS += --sysroot=src
 CFLAGS += -Isrc/libc/include -O2
 
@@ -73,11 +73,13 @@ nested: root/lib/libc.a
 ### build the libc ###
 ### every binary is statically linked against it ###
 libc_obj := $(patsubst %.c,%.o,$(shell find src/libc/ -type f -name '*.c'))
-root/lib/libc.a: src/libc/lowlevel.o $(libc_obj)
+libc_obj2:= $(patsubst %.s,%.asm.o,$(shell find src/libc/ -type f -name '*.s'))
+
+root/lib/libc.a: $(libc_obj) $(libc_obj2)
 	@mkdir -p $(@D)
 	ar rcs $@ $^
 
-src/libc/lowlevel.o: src/libc/lowlevel.s
+src/libc/%.asm.o: src/libc/%.s
 	@${CC} ${CFLAGS} -c $^ -o $@
 
 src/libc/%.o: src/libc/%.c

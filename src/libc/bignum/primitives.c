@@ -120,7 +120,7 @@ inline void __BNR_sub_loop_body(uint64_t *res, int i, bool *overflow,
     *overflow += __builtin_sub_overflow(dA, dB, &res[i]);
 }
 
-void BN_sub(bignum result, const bignum a, const bignum b) {
+bool BN_sub(bignum result, const bignum a, const bignum b) {
     bool overflow = false;
     int i = 0;
 
@@ -144,8 +144,9 @@ void BN_sub(bignum result, const bignum a, const bignum b) {
                      0, b.digits[i]);
     }
 
-    if (i >= result.length) return;
+    if (i >= result.length) return overflow; // TODO false negatives
     memset(&result.digits[i], overflow ? 0xFF : 0, (result.length - i) * sizeof(uint64_t));
+    return overflow;
 }
 
 
@@ -164,7 +165,7 @@ void BN_mul(bignum result, const bignum a, const bignum b) {
             uint64_t overflow = __builtin_add_overflow(low, result.digits[pos],
                     &result.digits[pos]);
 
-            __int128 product = (__int128)(a.digits[i]) * (__int128)(b.digits[j]);
+            __int128 product = (__int128)(a.digits[i]) * (__int128)(b.digits[j]); // TODO shouldn't i use uint128?
             low  = product >> 64;
             high = product;
             low += overflow; // refer to comment below

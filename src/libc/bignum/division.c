@@ -1,85 +1,128 @@
 #define _BN_INTERNAL
+#include <assert.h>
 #include <bignum.h>
 #include <stdlib.h>
 #include <string.h>
 
-// https://youtu.be/iGVZIDQl6m0?t=1231
-// i'm ripping this algorithm off a youtube video
-// shoutouts to the author
+// Knuth - The art of computer programming, vol. 2
+// 4.3.1
 //
 // the quotient is optional
 void BN_div(const bignum dividend, const bignum divisor,
         bignum quotient, bignum remainder) {
-    // TODO replace with knuth
+    BNA_push();
 
-    int dividend_order = BN_order(dividend);
-    int divisor_order = BN_order(divisor);
+    bignum u,   // dividend
+           v,   // divisor
+           amputee,
+           tmp;
 
-    // assert divisor_order != 0
-
-    BN_zeroout(quotient);
-
-    // is the dividend has less digits than the dividend, we can just skip
-    // the whole math
-    if (dividend_order < divisor_order) {
-        BN_copy(remainder, dividend);
+    uint16_t u_order = BN_order(dividend);
+    uint16_t v_order = BN_order(divisor);
+    if (u_order < v_order) {
+        BN_zeroout(quotient);
+        //BN_cpy(remainder, dividend); TODO IMPORTANT
         return;
     }
 
-    // remainder = [divisor_order - 1] most significant digits of dividend
-    // the most significant digit of the dividend is at [dividend_order - 1]
-    //     if we're taking 1 digit we'd start at [dividend_order - 1], copy 1
-    //                     2 digits              [dividend_order - 2], copy 2
-    BN_zeroout(remainder);
-    memcpy(remainder.digits, &dividend.digits[dividend_order - (divisor_order - 1)], (divisor_order - 1) * sizeof(uint64_t));
+    /* 
+     * D1. Normalize 
+     */
+    uint64_t d = 1; //0x8000000000000000 / divisor.digits[v_order - 1] * 2;
+    while (divisor.digits[v_order - 1] * d < 0x8000000000000000) d <<= 1;
+    printf("d = %d\n", d);
 
-    bignum intermediate = BN_new(divisor_order + 2);
-    bignum d = BN_new(1);
-    bignum multiple = BN_new(divisor_order + 2);
+    u = BNA_newBN(BN_order(dividend) + 1);
+    v = BNA_newBN(v_order);
 
-    for (int i = 0; i <= dividend_order - divisor_order; i++) {
-        BN_zeroout(intermediate);
-        // the least significant digit is the [divisor_order + i]th ms one of
-        // the dividend
-        intermediate.digits[0] =
-            dividend.digits[dividend_order - (divisor_order + i)];
-        // then the rest of it is the remainder
-        memcpy(&intermediate.digits[1],
-               remainder.digits,
-               divisor_order * sizeof(uint64_t));
+    BN_mul(u, dividend, (bignum) {.length = 1, .digits = &d});
+    BN_mul(v, divisor,  (bignum) {.length = 1, .digits = &d});
 
-        // binary search for the biggest d for which d * divisor < intermediate
-        uint64_t low =  0,
-                high = ~0;
-        while (low <= high) {
-            d.digits[0] = (low >> 1) + (high >> 1);
+    // assert(v.digits[v_order - 1] >= 0x8000000000000000);
+    // also it shouldn't overflow, which'd be guaranteed if i just bitshifted
+    
+    /*
+     * D2. Initialize j
+     */
+    uint64_t j = u_order - v_order;
 
-            BN_mul_karatsuba(multiple, d, divisor);
-            int8_t diff = BN_compare(multiple, intermediate);
+    tmp = BNA_newBN(v_order + 1);
 
-            if (diff < 0) {
-                low = d.digits[0] + 1;
-            } else if (diff > 0) {
-                high = d.digits[0] - 1;
-            } else { break; }
+    BN_print(v);
+    BN_print(u);
+    /*
+     * D3. Calculate q
+     */
+D3: {
+        puts("");
+        amputee = BN_amputate(u, j);
 
-            if (low == ~0ull) break; // look i'm too lazy to think about how to fix the binary search
+        __uint128_t dub = 0;
+        //((__uint128_t) u.digits[j + v_order] << 64) 
+        dub += u.digits[j + v_order - 1];
+
+        printf("dub = %x%x%x%x\n", (uint32_t)(dub >> 96), (uint32_t)(dub >> 64), (uint32_t)(dub >> 32), dub);
+
+        __uint128_t q = dub / v.digits[v_order - 1];
+        __uint128_t rem =  dub % v.digits[v_order - 1];
+
+        printf("preq= %x%x%x%x\n", (uint32_t)(q >> 96), (uint32_t)(q >> 64), (uint32_t)(q >> 32), q);
+        printf("rem = %x%x%x%x\n", (uint32_t)(rem >> 96), (uint32_t)(rem >> 64), (uint32_t)(rem >> 32), rem);
+        // TODO VULN timing attack
+this_will_be_a_loop_dont_worry:
+        if (
+//                ((q >> 64) > 0) ||
+            ((q * v.digits[v_order - 2]) > ((rem << 64) + u.digits[j + v_order - 2])) // what the fuck?
+           )
+        {
+            if (q == 0) printf("q == 0\n");
+            rem += v.digits[v_order - 1];
+            printf("!req= %x%x%x%x\n", (uint32_t)(q >> 96), (uint32_t)(q >> 64), (uint32_t)(q >> 32), q);
+            exit(1);
+            if (rem >> 64 == 0)
+                goto this_will_be_a_loop_dont_worry;
+        }
+        printf("j = %d ; q = %x%x%x%x\n", j, (uint32_t)q >> 96, (uint32_t)q >> 64, (uint32_t)q >> 32, q);
+        BN_print(amputee);
+
+        /*
+         * D4. Multiply and subtract
+         */
+        // not the most efficient way to do this, idc (yet)
+        uint64_t q2 = q;
+        BN_mul(tmp, (bignum) {.length = 1, .digits = &q2}, v);
+        bool overflow = BN_sub(amputee, amputee, tmp);
+        BN_print(u);
+
+        /*
+         * D5. Test remainder
+         */
+        if (j < quotient.length) // TODO BN_set
+            quotient.digits[j] = q2;
+
+        if (overflow) {
+            /*
+             * D6. Add back
+             */
+            // TODO test this branch
+            quotient.digits[j]--;
+            BN_add(amputee, amputee, u);
+            BN_print(u);
         }
 
-        // d might be wrong, TODO have a big fat think about this
-        d.digits[0] = high;
-        if (quotient.length > dividend_order - divisor_order - i)
-            quotient.digits  [dividend_order - divisor_order - i] = d.digits[0];
-
-        // remainder = intermediate - d * divisor
-        BN_copy(remainder, intermediate);
-        BN_mul_karatsuba(multiple, d, divisor);
-        BN_sub(remainder, remainder, multiple);
+         /*
+          * 7. Loop on j
+          */
+        if (j-- != 0) goto D3;
     }
 
-    BN_free(intermediate);
-    BN_free(d);
-    BN_free(multiple);
+    /*
+     * 8. Unnormalize
+     */
+    // TODO
+
+
+    BNA_pop();
 }
 
 // slower that regular modexp, but more secure against timing attacks
