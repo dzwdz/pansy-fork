@@ -3,7 +3,7 @@ export # make sure sub-makes get all our vars
 
 CC     ?= gcc
 CFLAGS := ${CFLAGS}
-CFLAGS += -nostdlib -static
+CFLAGS += -ffreestanding -nostartfiles -static
 CFLAGS += -Wall -Wextra
 CFLAGS += -g -lgcc
 CFLAGS += --sysroot=src
