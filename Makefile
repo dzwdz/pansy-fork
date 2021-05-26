@@ -3,12 +3,11 @@ export # make sure sub-makes get all our vars
 
 CC     ?= gcc
 CFLAGS := ${CFLAGS}
-CFLAGS += -fno-stack-protector
-CFLAGS += -nostdlib -static
+CFLAGS += -ffreestanding -nostartfiles -static
 CFLAGS += -Wall -Wextra
-CFLAGS += -g
+CFLAGS += -g -lgcc
 CFLAGS += --sysroot=src
-CFLAGS += -Isrc/libc/include
+CFLAGS += -Isrc/libc/include -O2
 
 KERNEL ?= deps/vmlinuz
 KFLAGS := ${KFLAGS},
@@ -61,7 +60,7 @@ root/bin/%: src/bin/%.c root/lib/libc.a
 # but the thing is, some binaries have multiple source files
 # we build those using this mess
 M := $(shell find . -type d | grep src/bin/)
-nested:
+nested: root/lib/libc.a
 	@for dir in $(M); do \
 		DIR=$$dir $(MAKE) -f Cursedfile --no-print-directory; \
 		if ! [ 0 -eq $$? ]; then \
@@ -74,11 +73,13 @@ nested:
 ### build the libc ###
 ### every binary is statically linked against it ###
 libc_obj := $(patsubst %.c,%.o,$(shell find src/libc/ -type f -name '*.c'))
-root/lib/libc.a: src/libc/lowlevel.o $(libc_obj)
+libc_obj2:= $(patsubst %.s,%.asm.o,$(shell find src/libc/ -type f -name '*.s'))
+
+root/lib/libc.a: $(libc_obj) $(libc_obj2)
 	@mkdir -p $(@D)
 	ar rcs $@ $^
 
-src/libc/lowlevel.o: src/libc/lowlevel.s
+src/libc/%.asm.o: src/libc/%.s
 	@${CC} ${CFLAGS} -c $^ -o $@
 
 src/libc/%.o: src/libc/%.c
