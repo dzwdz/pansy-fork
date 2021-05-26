@@ -97,3 +97,10 @@ static inline bignum BN_amputate(bignum bn, uint16_t diff) {
         .digits = &bn.digits[diff]
     };
 }
+
+static inline bignum BN_strip(bignum bn) {
+    return (bignum) {
+        .length = BN_order(bn),
+        .digits = bn.digits
+    };
+}

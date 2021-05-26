@@ -1,7 +1,9 @@
 #define _BN_INTERNAL
+//#define _BN_SELF_TEST
 #include <assert.h>
 #include <bignum.h>
 #include <stdlib.h>
+#include <stdio.h> // used in selftests
 #include <string.h>
 
 // Knuth - The art of computer programming, vol. 2
@@ -9,11 +11,12 @@
 //
 // the quotient is optional
 void BN_div(const bignum dividend, const bignum divisor,
-        bignum quotient, bignum remainder) {
+        bignum _quotient, bignum remainder) {
     BNA_push();
 
     bignum u,   // dividend
            v,   // divisor
+           quotient = _quotient, // we have a copy for selftests
            amputee, tmp;
 
     BN_zeroout(quotient);
@@ -22,7 +25,7 @@ void BN_div(const bignum dividend, const bignum divisor,
     uint16_t v_order = BN_order(divisor);
     if (u_order < v_order) {
         BN_zeroout(quotient);
-        //BN_cpy(remainder, dividend); TODO IMPORTANT
+        BN_copy(remainder, dividend);
         return;
     }
 
@@ -46,6 +49,10 @@ void BN_div(const bignum dividend, const bignum divisor,
      * D2. Initialize j
      */
     uint64_t j = u_order - v_order;
+#ifdef _BN_SELF_TEST
+    quotient = BNA_newBN(j + 1);
+    BN_zeroout(quotient);
+#endif
 
     tmp = BNA_newBN(v_order + 1);
 
@@ -68,6 +75,7 @@ this_will_be_a_loop_dont_worry:
             ((q * v.digits[v_order - 2]) > ((rem << 64) + u.digits[j + v_order - 2]))
            )
         {
+            q--;
             rem += v.digits[v_order - 1];
             if (rem >> 64 == 0)
                 goto this_will_be_a_loop_dont_worry;
@@ -110,6 +118,28 @@ this_will_be_a_loop_dont_worry:
         // but since when do i care about the best way
         BN_div(u, d_bn, remainder, BN_NULL);
     }
+
+#ifdef _BN_SELF_TEST
+    if (remainder.length > 0) {
+        BN_mul(u, quotient, divisor);
+        BN_add(u, u, remainder);
+        if (BN_compare(u, dividend) != 0) {
+            puts("\n\tSELFTEST FAILED");
+            puts("got:");
+            BN_print(BN_strip(u));
+            puts("dividend:");
+            BN_print(BN_strip(dividend));
+            puts("divisor:");
+            BN_print(BN_strip(divisor));
+            puts("quotient:");
+            BN_print(BN_strip(quotient));
+            puts("remainder:");
+            BN_print(BN_strip(remainder));
+            assert(false);
+        }
+    }
+    BN_copy(_quotient, quotient);
+#endif
 
 
     BNA_pop();

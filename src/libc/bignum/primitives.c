@@ -12,20 +12,24 @@ const bignum BN_NULL = {
 
 // returns sign(a - b)
 int8_t BN_compare (const bignum a, const bignum b) {
+    uint64_t min = a.length;
+
+    // TODO one of those returns is wrong
     if (a.length < b.length) {
         for (int i = a.length; i < b.length; i++) {
             if (b.digits[i] != 0) return -1;
         }
     } else if (b.length < a.length) {
+        min = b.length;
         for (int i = b.length; i < a.length; i++) {
             if (a.digits[i] != 0) return -1;
         }
     }
 
-    for (int i = a.length - 1; i >= 0; i--) {
+    for (int i = min - 1; i >= 0; i--) {
         if (a.digits[i] == b.digits[i]) continue;
         if (a.digits[i] <  b.digits[i]) return -1;
-        else                              return  1;
+        else                            return  1;
     }
 
     return 0;
