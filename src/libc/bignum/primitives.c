@@ -78,7 +78,7 @@ void BN_random(const bignum lower, const bignum upper, bignum target) {
 }
 
 
-inline void __BNR_add_loop_body(uint64_t *res, int i, bool *overflow, 
+static inline void __BNR_add_loop_body(uint64_t *res, int i, bool *overflow, 
         uint64_t dA, uint64_t dB) {
     *overflow  = __builtin_add_overflow(*overflow ? 1 : 0, dB, &dB);
     *overflow += __builtin_add_overflow(dA, dB, &res[i]);
@@ -118,7 +118,7 @@ void BN_add(bignum result, const bignum a, const bignum b) {
 }
 
 
-inline void __BNR_sub_loop_body(uint64_t *res, int i, bool *overflow, 
+static inline void __BNR_sub_loop_body(uint64_t *res, int i, bool *overflow, 
         uint64_t dA, uint64_t dB) {
     *overflow  = __builtin_add_overflow(*overflow ? 1 : 0, dB, &dB);
     *overflow += __builtin_sub_overflow(dA, dB, &res[i]);
