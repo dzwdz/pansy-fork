@@ -9,6 +9,7 @@
 #include "misc.h"
 #include "proto.h"
 #include <bignum.h>
+#include <crypto/sha256.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -122,6 +123,7 @@ void key_exchange(connection *conn) {
     bignum cl_pub  = BN_new(33), // must be as big as the DH prime
            our_pub = BN_new(33),
            shared  = BN_new(33);
+    char digest[32];
 
     { // 1. the client sends us E, we do the DH math
         iter_t packet = read_packet(conn);
@@ -152,6 +154,13 @@ void key_exchange(connection *conn) {
         push_bignum (&hash, our_pub);
         push_bignum (&hash, shared);
 
+        sha256_ctx ctx;
+        sha256_init(&ctx);
+        sha256_append(&ctx, hash.base, hash.pos);
+        sha256_final(&ctx);
+        sha256_digest(&ctx, &digest);
+        hexdump(digest, 32);
+
         // also we free the client/server payloads
         free(conn->client_payload.base);
         free(conn->server_payload.base);
@@ -159,12 +168,14 @@ void key_exchange(connection *conn) {
     puts("2done");
     { // 3. we send the signature, our DH pub, and our host key
         iter_t packet = start_packet(conn);
+        iter_t sig = RSA_sign((iter_t) {.base = (void*)digest, .pos = 0, .max = 32});
 
         push_byte  (&packet, SSH_MSG_KEXDX_REPLY);
         push_iter  (&packet, HOST_KEY);
         push_bignum(&packet, our_pub);
-        push_cstring(&packet, "signature goes here");
+        push_iter  (&packet, sig);
 
+        free(sig.base);
         send_packet(conn, packet);
     }
     puts("3done");

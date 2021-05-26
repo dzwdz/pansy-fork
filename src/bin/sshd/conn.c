@@ -91,6 +91,7 @@ void pop_bignum(iter_t *iter, bignum target) {
      || (iter->pos + len > iter->max)) exit(1);
 
     // a mess
+    // TODO BN_frombytes
     BN_zeroout(target);
     for (uint32_t i = 0; i < len; i++) {
         int reverse = len - i - 1;

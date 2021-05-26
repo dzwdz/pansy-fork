@@ -1,7 +1,9 @@
 #include "crypto.h"
 #include "conn.h"
 #include "misc.h"
+#include <assert.h>
 #include <bignum.h>
+#include <crypto/sha1.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -71,12 +73,90 @@ void diffie_hellman_group14(const bignum cl_pub, bignum our_pub,
                             bignum shared_secret) {
     bignum our_secret = BN_new(256 / 8);
     BN_random(ONE, DH14P, our_secret);
-    BN_random(ONE, DH14P, cl_pub); // TODO if this makes it to a commit i'm dumb
 
     BN_modexp_timingsafe(our_pub, TWO, our_secret, DH14P);
     BN_modexp_timingsafe(shared_secret, cl_pub, our_secret, DH14P);
 
+    printf("DH14P ");
+    BN_print(DH14P);
+    printf("our secret ");
+    BN_print(our_secret);
+    printf("cl pub ");
+    BN_print(cl_pub);
+    printf("our pub ");
+    BN_print(our_pub);
+    printf("shared secret ");
+    BN_print(shared_secret);
+
     BN_free(our_secret);
+}
+
+// RFC 3447 / 9.2.
+// assumes SHA1 as the function used
+void pkcs1(iter_t msg, uint64_t length, void *buf) {
+    uint64_t min_len =
+        1   +  1    +  8       +  1    +  15              + 20;
+    // 0x00 || 0x01 || PS (8+) || 0x00 || DigestInfo (15) || SHA1 (20)
+    assert(length >= min_len);
+
+    char *padded = buf;
+
+    padded[0] = 0x00;
+    padded[1] = 0x01;
+    int i = 2;
+    for (; i < length - 36; i++) {
+        padded[i] = 0xFF;
+    }
+
+    // RFC 3447 / page 43
+    memcpy(&padded[i], "\x30\x21\x30\x09\x06"
+                       "\x05\x2b\x0e\x03\x02"
+                       "\x1a\x05\x00\x04\x14", 15);
+    i += 15;
+    padded[i++] = 0x00;
+
+    sha1_ctx ctx;
+    sha1_init(&ctx);
+    sha1_append(&ctx, msg.base, msg.max);
+    sha1_final(&ctx);
+    sha1_digest(&ctx, &padded[i]);
+}
+
+// RFC 3447 / 8.2.1.
+// returns an iterator pointing to a freshly allocated buffer, remember to free it
+// TODO it could just statically allocate a buffer in prepare_identities
+iter_t RSA_sign(iter_t blob) {
+    int length = 256; // TODO
+    int overhead = 4 + 7 + 4; // 00 00 00 07  s  h  a  -  r  s  a  00 00 01 00
+    char *buf = malloc(length + overhead);
+    bignum m = BN_new(256 / sizeof(uint64_t));
+    bignum s = BN_new(256 / sizeof(uint64_t));
+
+    pkcs1(blob, length, buf);
+
+    // TODO BN_frombytes
+    for (uint32_t i = 0; i < length; i++) {
+        int reverse = length - i - 1;
+        m.digits[reverse / 8]
+            |= ((uint64_t)(buf[i]  & 0xff) << 8 * (reverse % 8));
+    }
+
+
+    BN_modexp_timingsafe(s, m, HOST_D, HOST_N);
+
+    iter_t sig = {
+        .base = (void *)buf,
+        .max  = length + overhead,
+        .pos  = 0
+    };
+
+    push_string(&sig, "ssh-rsa", 7);
+    push_bignum(&sig, s);
+
+    free(m.digits);
+    free(s.digits);
+
+    return sig;
 }
 
 void init_crypto() {

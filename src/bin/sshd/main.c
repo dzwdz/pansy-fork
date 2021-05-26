@@ -73,13 +73,5 @@ int main() {
     puts("initializing crypto...");
     init_crypto();
 
-
-    // temp benchmark
-    bignum cl_pub  = BN_new(33), // must be as big as the DH prime
-           our_pub = BN_new(33),
-           shared  = BN_new(33);
-
-    diffie_hellman_group14(cl_pub, our_pub, shared);
-
-    //server_loop(2022);
+    server_loop(2022);
 }

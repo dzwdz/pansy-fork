@@ -1,5 +1,5 @@
 #define _BN_INTERNAL
-//#define _BN_SELF_TEST
+#define _BN_SELF_TEST
 #include <assert.h>
 #include <bignum.h>
 #include <stdlib.h>
