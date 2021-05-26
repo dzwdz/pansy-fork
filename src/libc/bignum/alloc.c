@@ -40,6 +40,7 @@ bignum BNA_newBN(uint16_t length) {
 void BNA_push() {
     if (base == NULL)
         BNA_init();
+    //printf("top %x / %x\n", top, max);
 
     *(void**)top = base;
     base = top;

@@ -163,6 +163,14 @@ void BN_modexp_timingsafe(bignum result, const bignum base,
 
     bignum x3 = BN_new(order1); // temporary var
 
+    /*
+     * VULN karatsuba is probably vulnerable to timing attacks
+     *
+     * also, it has the exact same performance here as just calling BN_mul with
+     * stripped arguments
+     *
+     * this could change once you disable optimizations
+     */
     uint64_t bits = BN_log2(power);
     for (int i = bits - 2; i >= 0; i--) {
         uint64_t bit = power.digits[i / 64]
