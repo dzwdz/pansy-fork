@@ -34,4 +34,6 @@ int main(int argc, char *argv[]) {
     }
     argv++;
     rm_file(argv);
+
+    return 0;
 }

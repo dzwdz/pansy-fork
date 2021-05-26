@@ -11,8 +11,8 @@ void *mmap(void *addr, size_t len, int prot, int flags,
 }
 
 void *sbrk(intptr_t increment) {
-    void* brk = (void*) syscall(SYS_brk, 0);
-    void* ret = (void*) syscall(SYS_brk, brk + increment);
+    char *brk = (char*) syscall(SYS_brk, 0);
+    char *ret = (char*) syscall(SYS_brk, brk + increment);
     if (brk + increment != ret) return (void*)-1;
     return brk;
 }
@@ -27,9 +27,9 @@ struct block_s {
     struct block *next;
 };
 
-void* malloc(size_t size) {
+void *malloc(size_t size) {
 //    printf("allocating %x...\n", (unsigned int)size);
-    void* ptr = sbrk(sizeof(block_s) + size);
+    char *ptr = sbrk(sizeof(block_s) + size);
     if (ptr == (void*)-1)
         return NULL;
 
@@ -42,11 +42,11 @@ void* malloc(size_t size) {
     return ptr + sizeof(block_s);
 }
 
-void free(void* ptr) {
+void free(void *ptr) {
     if (ptr == NULL)
         return;
 
-    block_s *b = (block_s*)(ptr - sizeof(block_s));
+    block_s *b = (block_s*)((char *)ptr - sizeof(block_s));
     b->free = true;
 }
 

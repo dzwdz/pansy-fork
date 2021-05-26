@@ -34,4 +34,6 @@ int main() {
     }
 
     puts("all tests passed!");
+
+    return 0;
 }

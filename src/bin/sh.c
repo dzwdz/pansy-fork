@@ -23,7 +23,7 @@ char** split_args(const char* str) {
     char** parts_start = shared_buf;
     char** parts       = parts_start;
 
-    char* buf_start    = shared_buf + 64 * sizeof(char*);
+    char* buf_start    = (char*)shared_buf + 64 * sizeof(char*);
     char* buf          = buf_start;
 
     bool quoted        = false;

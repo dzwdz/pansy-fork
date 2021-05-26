@@ -4,7 +4,7 @@
 
 int main(int argc, char *argv[]) {
     bool noption = false;
-    
+
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "-n")) {
             noption = true;
@@ -16,4 +16,5 @@ int main(int argc, char *argv[]) {
     }
     if (!noption)
         putchar('\n');
+    return 0;
 }

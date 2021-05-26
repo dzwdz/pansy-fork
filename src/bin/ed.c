@@ -13,7 +13,7 @@ struct buffer {
     char **lines; // currently the line len is static == 256 TODO dynamic
     int line_amt; // amount of lines currently loaded
     int line_max; // size of lines[]
-    
+
     char *path;
 };
 
@@ -63,7 +63,7 @@ bool buffer_open(struct buffer *buf, const char *path) {
     close(fd);
     raw[size] = '\0';
 
-    
+
     buffer_append(buf, raw, -1);
     free(raw);
     return true;
@@ -135,6 +135,7 @@ bool parse_cmd(struct buffer *buf, const char *c) {
         }
         case 'q': // quit
             exit(0);
+            break; // compiler complains if this isn't here
 
         default:
             puts("unrecognized command");

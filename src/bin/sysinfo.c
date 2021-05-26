@@ -41,4 +41,5 @@ int main() {
            (info.totalhigh - info.freehigh) / 1024,
            info.procs
         );
+    return 0;
 }

@@ -3,15 +3,23 @@ export # make sure sub-makes get all our vars
 
 CC     ?= gcc
 CFLAGS := ${CFLAGS}
-CFLAGS += -ffreestanding -nostartfiles -static
+CFLAGS += -fno-stack-protector
+CFLAGS += -std=c99 -pedantic-errors
+CFLAGS += -ffreestanding -static
 CFLAGS += -Wall -Wextra
-CFLAGS += -g -lgcc
-CFLAGS += --sysroot=src
+CFLAGS += -g
 CFLAGS += -Isrc/libc/include -O2
+ifeq ($(CC),tcc)
+	CFLAGS += -nostdlib
+else
+	CFLAGS += -nostartfiles
+	CFLAGS += --sysroot=src
+	CFLAGS += -lgcc
+endif
 
 KERNEL ?= deps/vmlinuz
 KFLAGS := ${KFLAGS},
-KFLAGS += console=ttyS0, root=/dev/ram0, 
+KFLAGS += console=ttyS0, root=/dev/ram0,
 ifdef VERBOSE
 	KFLAGS += debug=true
 endif
@@ -55,7 +63,11 @@ root/%: static/%
 # the single file build is simple enough
 root/bin/%: src/bin/%.c root/lib/libc.a
 	@mkdir -p $(@D)
+ifeq ($(CC),tcc)
+	@${CC} ${CFLAGS} -ltcc $^ -o $@
+else
 	@${CC} ${CFLAGS} $^ -o $@
+endif
 
 # but the thing is, some binaries have multiple source files
 # we build those using this mess

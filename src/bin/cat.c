@@ -37,4 +37,6 @@ int main(int argc, char *argv[]) {
         if (file != STDIN_FILENO)
             close(file);
     }
+
+    return 0;
 }

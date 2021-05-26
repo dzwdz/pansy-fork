@@ -47,7 +47,7 @@ char *strncat(char *dest, const char *src, size_t n) {
 
 int memcmp(const void *s1, const void *s2, size_t n) {
     const unsigned char *c1 = s1, *c2 = s2;
-    for (int i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
         if (c1[i] != c2[i]) {
             if (c1[i] < c2[i])  return -1;
             else                return 1;
@@ -69,14 +69,14 @@ void __attribute__((optimize("O1"))) *memset(void *dest, int cc, size_t n) {
     // align *d with the reg size
     // i'm actually not quite sure if this is necessary
     // 64bit - 8 bytes - top 3 bits
-    offset = (0b1000 - ((intptr_t)d & 0b111)) & 0b111;
+    offset = (8 - ((intptr_t)d & 7)) & 7;
     n -= offset;
     while (offset--)
         *d++ = c;
 
     // aight it's aligned
     // now let's save the amount of bytes at the end
-    offset = n & 0b111;
+    offset = n & 7;
     // and write in blocks
     uint64_t *dd = (void *)d;
     uint64_t block = 0x0101010101010101 * c;

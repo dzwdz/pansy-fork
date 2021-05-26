@@ -31,4 +31,6 @@ int main(int argc, char *argv[]) {
     }
     argv++;
     rm_path(argv);
+
+    return 0;
 }

@@ -36,7 +36,7 @@ char **split_args(const char* str) {
     char** parts_start = shared_buf;
     char** parts       = parts_start;
 
-    char* buf_start    = shared_buf + 64 * sizeof(char*);
+    char* buf_start    = (char *)shared_buf + 64 * sizeof(char*);
     char* buf          = buf_start;
 
     while (*str != '\0') {
@@ -292,7 +292,7 @@ worddef(two_over) {
 
 worddef(drop) {
     pop();
-    
+
     return tokens;
 }
 
@@ -596,7 +596,7 @@ void run_file(int fd, word *dictionary) {
             for (int j = 0; j < MAX_LEN; j++)
                 buf[j] = '\0';
             i = 0;
-        } 
+        }
     }
 }
 
@@ -635,7 +635,7 @@ int main(int argc __attribute__((unused)),
     }
     while (1) {
         readline(buf, MAX_LEN);
-        
+
         if (buf[0] == '\0')
             continue;
 
