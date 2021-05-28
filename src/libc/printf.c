@@ -120,8 +120,8 @@ parse_fmt:
             break;
 
         case '\0':
-            writer(warg, sub, fmt - sub);
-            return total + (fmt - sub);
+            writer(warg, sub, fmt - sub - 1);
+            return total + (fmt - sub - 1);
         }
     }
 }
