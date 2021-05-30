@@ -12,6 +12,7 @@ void test_string();
 
 // bignums.c
 void test_bignum();
+// TODO specialized tests for diffie hellman and RSA
 
 // hashes.c
 void test_sha();

@@ -57,7 +57,7 @@ void BN_print(const bignum a) {
             if (c > '9') c += 'A' - '9' - 1;
             write(1, &c, 1);
         }
-//        printf(" ");
+        printf(" ");
     }
     puts("");
 }

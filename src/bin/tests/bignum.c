@@ -26,6 +26,14 @@ void test_bignum() {
     }
 
     {
+        BN_fromhex(c, "1");
+        BN_div(a, c, d, e);
+        assert(BN_compare(d, a) == 0);
+        BN_fromhex(expected, "0");
+        assert(BN_compare(e, expected) == 0);
+    }
+
+    {
         BN_mul(c, a, b);
         BN_fromhex(expected,
             "1122246acceef3812008a067868cf7f897bbfa34ca09621f56438211a49116e75274e2dd9ca21167161a18421599c36");
