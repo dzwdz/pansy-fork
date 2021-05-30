@@ -1,5 +1,5 @@
 #define _BN_INTERNAL
-//#define _BN_SELF_TEST
+#define _BN_SELF_TEST
 #include <assert.h>
 #include <bignum.h>
 #include <stdlib.h>
@@ -11,149 +11,122 @@ void BN_div_single(const bignum dividend, uint64_t divisor,
 
 // Knuth - The art of computer programming, vol. 2
 // 4.3.1
-//
-// the quotient is optional
 void BN_div(const bignum dividend, const bignum divisor,
-        bignum _quotient, bignum remainder) {
-    BNA_push();
-
-    bignum u,   // dividend
-           v,   // divisor
-           quotient = _quotient, // we have a copy for selftests
-           amputee, tmp;
-
-    BN_zeroout(quotient);
-
+        bignum _quotient, bignum remainder)
+{
     uint16_t u_order = BN_order(dividend);
     uint16_t v_order = BN_order(divisor);
-    assert(v_order != 0); // division by zero
+    uint64_t j = u_order - v_order; // amt of quotient digits
+    bignum u,   // dividend
+           v,   // divisor
+           quotient = _quotient, // used for selftests
+           amputee, tmp;
+
+    // special cases
+    assert(v_order != 0);
     if (v_order == 1) {
-        // this algorithm doesn't work for division by a single digit
-        BN_div_single(dividend, divisor.digits[0], _quotient, remainder);
-        BNA_pop();
+        BN_div_single(dividend, divisor.digits[0], quotient, remainder);
         return;
-    }
-    if (u_order < v_order) {
+    } else if (u_order < v_order) {
         BN_zeroout(quotient);
         BN_copy(remainder, dividend);
-        BNA_pop();
         return;
     }
 
-    /* 
-     * D1. Normalize 
-     */
-    uint64_t d = 1; //0x8000000000000000 / divisor.digits[v_order - 1] * 2;
-    while (divisor.digits[v_order - 1] * d < 0x8000000000000000) d <<= 1;
-    bignum d_bn = {.length = 1, .digits = &d};
+    // the normal case
+    {
+        BNA_push();
+        BN_zeroout(quotient);
 
-    u = BNA_newBN(BN_order(dividend) + 1);
-    v = BNA_newBN(v_order);
+        u = BNA_newBN(u_order + 1);
+        v = BNA_newBN(v_order);
+        tmp = BNA_newBN(v_order + 1);
 
-    BN_mul(u, dividend, d_bn);
-    BN_mul(v, divisor,  d_bn);
-
-    // assert(v.digits[v_order - 1] >= 0x8000000000000000);
-    // also it shouldn't overflow, which'd be guaranteed if i just bitshifted
-    
-    /*
-     * D2. Initialize j
-     */
-    uint64_t j = u_order - v_order;
 #ifdef _BN_SELF_TEST
-    quotient = BNA_newBN(j + 1);
-    BN_zeroout(quotient);
+        quotient = BNA_newBN(j + 1);
+        BN_zeroout(quotient);
 #endif
-
-    tmp = BNA_newBN(v_order + 1);
-
-    /*
-     * D3. Calculate q
-     */
-D3: {
-        amputee = BN_amputate(u, j);
-
-        __uint128_t dub = ((__uint128_t) u.digits[j + v_order] << 64)
-                        + u.digits[j + v_order - 1];
-
-        __uint128_t q = dub / v.digits[v_order - 1];
-        __uint128_t rem =  dub % v.digits[v_order - 1];
-
-        // TODO VULN timing attack
-this_will_be_a_loop_dont_worry:
-        if (
-                ((q >> 64) > 0) ||
-            ((q * v.digits[v_order - 2]) > ((rem << 64) + u.digits[j + v_order - 2]))
-           )
-        {
-            q--;
-            rem += v.digits[v_order - 1];
-            if (rem >> 64 == 0)
-                goto this_will_be_a_loop_dont_worry;
-        }
 
         /*
-         * D4. Multiply and subtract
+         * (D1) Normalizing the divisor
+         * TODO this is shit
          */
-        // not the most efficient way to do this, idc (yet)
-        uint64_t q2 = q;
-        BN_mul(tmp, (bignum) {.length = 1, .digits = &q2}, v);
-        bool overflow = BN_sub(amputee, amputee, tmp);
+        uint64_t d = 1;
+        while (divisor.digits[v_order - 1] * d < 0x8000000000000000)
+            d <<= 1;
+        bignum d_bn = {.length = 1, .digits = &d};
 
-        if (j < quotient.length) {
-            quotient.digits[j] = q2;
+        BN_mul(u, dividend, d_bn);
+        BN_mul(v, divisor,  d_bn);
+        
 
-            /*
-             * D5. Test remainder
-             */
-            if (overflow) {
-                /*
-                 * D6. Add back
-                 */
-                quotient.digits[j]--;
-                BN_add(amputee, amputee, v);
+        do {
+            // (D3) Approximate q
+            __uint128_t dub = ((__uint128_t) u.digits[j + v_order] << 64)
+                            + u.digits[j + v_order - 1];
+
+            __uint128_t qq = dub / v.digits[v_order - 1];
+            __uint128_t rem =  dub % v.digits[v_order - 1];
+
+            /* yes, this is a mess. if you want to learn what's going on here,
+             * just read the original algorithm */
+            while ((qq >> 64) > 0 ||
+                  (qq * v.digits[v_order - 2]) >
+                    ((rem << 64) + u.digits[j + v_order - 2]))
+            {
+                qq--;
+                rem += v.digits[v_order - 1];
+                if (rem >> 64 != 0) break;
             }
-        }
 
-         /*
-          * 7. Loop on j
-          */
-        if (j-- != 0) goto D3;
-    }
 
-    /*
-     * 8. Unnormalize
-     */
-    if (remainder.length > 0) {
-        // not the best way to go about this        
-        // but since when do i care about the best way
-        BN_div(u, d_bn, remainder, BN_NULL);
-    }
+            // (D4) Multiply and subtract
+            amputee = BN_amputate(u, j);
+
+            uint64_t q = qq; // casting the uint128 to uint64
+            BN_mul(tmp, v, (bignum) {.length = 1, .digits = &q});
+            bool overflow = BN_sub(amputee, amputee, tmp);
+
+
+            // (D5 + D6) check if q was too big
+            if (overflow) {
+                BN_add(amputee, amputee, v);
+                q--;
+            }
+
+            // save the final q
+            if (j < quotient.length)
+                quotient.digits[j] = q;
+        } while (j-- != 0);
+
+
+        // (D8) unnormalize
+        if (remainder.length > 0)
+            BN_div_single(u, d, remainder, BN_NULL);
 
 #ifdef _BN_SELF_TEST
-    if (remainder.length > 0) {
-        BN_mul(u, quotient, divisor);
-        BN_add(u, u, remainder);
-        if (BN_compare(u, dividend) != 0) {
-            printf("\n%d\tSELFTEST FAILED\n", BN_compare(u, dividend));
-            puts("got:");
-            BN_print(BN_strip(u));
-            puts("dividend:");
-            BN_print(BN_strip(dividend));
-            puts("divisor:");
-            BN_print(BN_strip(divisor));
-            puts("quotient:");
-            BN_print(BN_strip(quotient));
-            puts("remainder:");
-            BN_print(BN_strip(remainder));
-            assert(false);
+        if (remainder.length > 0) {
+            BN_mul(u, quotient, divisor);
+            BN_add(u, u, remainder);
+            if (BN_compare(u, dividend) != 0) {
+                printf("\n%d\tSELFTEST FAILED\n", BN_compare(u, dividend));
+                puts("got:");
+                BN_print(BN_strip(u));
+                puts("dividend:");
+                BN_print(BN_strip(dividend));
+                puts("divisor:");
+                BN_print(BN_strip(divisor));
+                puts("quotient:");
+                BN_print(BN_strip(quotient));
+                puts("remainder:");
+                BN_print(BN_strip(remainder));
+                assert(false);
+            }
         }
-    }
-    BN_copy(_quotient, quotient);
+        BN_copy(_quotient, quotient);
 #endif
-
-
-    BNA_pop();
+        BNA_pop();
+    }
 }
 
 // divides by a single digit
@@ -162,60 +135,42 @@ void BN_div_single(const bignum dividend, uint64_t divisor,
                    bignum quotient, bignum remainder)
 {
     uint16_t u_order = BN_order(dividend);
+    uint64_t j = u_order - 1;
+    bignum u, amputee, tmp;
+
+    BN_zeroout(quotient);
     if (u_order == 0) {
-        BN_zeroout(quotient);
         BN_zeroout(remainder);
         return;
     }
 
-    BNA_push();
+    {
+        BNA_push();
 
-    bignum u,   // dividend
-           amputee,
-           tmp;
+        tmp = BNA_newBN(2);
+        u = BNA_newBN(u_order + 1);
+        BN_copy(u, dividend);
 
-    u = BNA_newBN(u_order + 1);
-    BN_copy(u, dividend);
+        do {
+            amputee = BN_amputate(u, j);
 
-    /*
-     * D2. Initialize j
-     */
-    uint64_t j = u_order - 1;
+            __uint128_t dub = ((__uint128_t) u.digits[j + 1] << 64)
+                            + u.digits[j];
+            uint64_t q = dub / divisor;
 
-    tmp = BNA_newBN(2);
+            BN_mul(tmp, (bignum) {.length = 1, .digits = &q},
+                        (bignum) {.length = 1, .digits = &divisor});
 
-    /*
-     * D3. Calculate q
-     */
-D3: {
-        amputee = BN_amputate(u, j);
+            bool overflow = BN_sub(amputee, amputee, tmp);
+            assert(!overflow);
 
-        __uint128_t dub = ((__uint128_t) u.digits[j + 1] << 64)
-                        + u.digits[j];
+            if (j < quotient.length)
+                quotient.digits[j] = q;
+        } while (j-- != 0);
 
-        uint64_t q = dub / divisor;
-        uint64_t rem =  dub % divisor;
-
-        /*
-         * D4. Multiply and subtract
-         */
-        // dumb
-        BN_mul(tmp, (bignum) {.length = 1, .digits = &q},
-                    (bignum) {.length = 1, .digits = &divisor});
-        bool overflow = BN_sub(amputee, amputee, tmp);
-        assert(!overflow);
-
-        if (j < quotient.length)
-            quotient.digits[j] = q;
-
-         /*
-          * 7. Loop on j
-          */
-        if (j-- != 0) goto D3;
+        BN_copy(remainder, u);
+        BNA_pop();
     }
-    BN_copy(remainder, u);
-
-    BNA_pop();
 }
 
 // slower that regular modexp, but more secure against timing attacks
