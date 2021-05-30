@@ -1,6 +1,9 @@
 /*
  * here are the functions that handle the "higher-level" parts of the SSH
  * protocol
+ *
+ * TODO nothing checks for trailing data. it probably isn't dangerous, but
+ * OpenSSH does that, soo
  */
 
 #include "conn.h"
@@ -131,11 +134,7 @@ void key_exchange(connection *conn) {
         pop_bignum(&packet, cl_pub);
 
         diffie_hellman_group14(cl_pub, our_pub, shared);
-
-        puts("dh shared secret:");
-        BN_print(shared);
     }
-    puts("1done");
     { // 2. we prepare the signature
         // i'm using sbuf as a buffer to hold the hash contents to simplify
         // the code a bit
@@ -165,7 +164,6 @@ void key_exchange(connection *conn) {
         free(conn->client_payload.base);
         free(conn->server_payload.base);
     }
-    puts("2done");
     { // 3. we send the signature, our DH pub, and our host key
         iter_t packet = start_packet(conn);
         iter_t sig = RSA_sign((iter_t) {.base = (void*)digest, .pos = 0, .max = 32});
@@ -178,12 +176,16 @@ void key_exchange(connection *conn) {
         free(sig.base);
         send_packet(conn, packet);
     }
-    puts("3done");
-    {
+    { // 4. accept the new keys
         iter_t packet = read_packet(conn);
-        hexdump(packet.base, packet.max);
+        if (pop_byte(&packet) != SSH_MSG_NEWKEYS) ssh_fatal(conn);
+
+        // i'm lazy, let's reuse the client's packet
+        send_packet(conn, packet);
     }
-    puts("4done");
+    { // 5. calculate the encryption keys TODO
+        read_packet(conn);
+    }
 
     BN_free(cl_pub);
     BN_free(our_pub);

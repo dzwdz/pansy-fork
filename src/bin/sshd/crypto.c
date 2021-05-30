@@ -77,17 +77,6 @@ void diffie_hellman_group14(const bignum cl_pub, bignum our_pub,
     BN_modexp_timingsafe(our_pub, TWO, our_secret, DH14P);
     BN_modexp_timingsafe(shared_secret, cl_pub, our_secret, DH14P);
 
-    printf("DH14P ");
-    BN_print(DH14P);
-    printf("our secret ");
-    BN_print(our_secret);
-    printf("cl pub ");
-    BN_print(cl_pub);
-    printf("our pub ");
-    BN_print(our_pub);
-    printf("shared secret ");
-    BN_print(shared_secret);
-
     BN_free(our_secret);
 }
 
@@ -109,11 +98,11 @@ void pkcs1(iter_t msg, uint64_t length, void *buf) {
     }
 
     // RFC 3447 / page 43
-    memcpy(&padded[i], "\x30\x21\x30\x09\x06"
+    memcpy(&padded[i], "\x00"
+                       "\x30\x21\x30\x09\x06"
                        "\x05\x2b\x0e\x03\x02"
-                       "\x1a\x05\x00\x04\x14", 15);
-    i += 15;
-    padded[i++] = 0x00;
+                       "\x1a\x05\x00\x04\x14", 16);
+    i += 16;
 
     sha1_ctx ctx;
     sha1_init(&ctx);
@@ -127,7 +116,8 @@ void pkcs1(iter_t msg, uint64_t length, void *buf) {
 // TODO it could just statically allocate a buffer in prepare_identities
 iter_t RSA_sign(iter_t blob) {
     int length = 256; // TODO
-    int overhead = 4 + 7 + 4; // 00 00 00 07  s  h  a  -  r  s  a  00 00 01 00
+    int overhead = 4 + 7 + 4 + 1; // 00 00 00 07  s  h  a  -  r  s  a  00 00 01 00
+                                  // + a padding byte for the sig
     char *buf = malloc(length + overhead);
     bignum m = BN_new(256 / sizeof(uint64_t));
     bignum s = BN_new(256 / sizeof(uint64_t));
@@ -152,6 +142,7 @@ iter_t RSA_sign(iter_t blob) {
 
     push_string(&sig, "ssh-rsa", 7);
     push_bignum(&sig, s);
+    sig.max = sig.pos;
 
     free(m.digits);
     free(s.digits);

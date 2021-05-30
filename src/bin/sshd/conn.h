@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define SBUF_SIZE 4096
+#define SBUF_SIZE 16384
 
 typedef struct {
     int fd;
