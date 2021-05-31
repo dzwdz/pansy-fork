@@ -68,54 +68,6 @@
 /* macro function for getting the value of a key if the ctrl key is held down */
 #define TUI_CTRL_KEY(k) ((k) & 0x1f)
 
-typedef unsigned char byte;
-
-
-/* Structs */
-
-/* One character in the buffer is called a cell.
- * It has a character representation (currently only ascii characters are
- * allowed), a foreground color and a background color.
- */
-struct cell {
-    char ch; // ascii only
-    uint16_t fg;
-    uint16_t bg;
-};
-
-/* Internal representation of the screen.
- * It holds an array of cells, of length height * width.
- */
-struct cell_buffer {
-    struct cell *cells;
-    int height;
-    int width;
-};
-
-/* Return type of polling/peeking events.
- * The prefix field will be filled with an eventual ^[ (escape key hit). This
- * happens if inputting the alt-key as a modifier. This unfortunately means you
- * have to hit the escape key two times to register the escape key by itself.
- */
-struct event {
-    char prefix;
-    char key;
-};
-
-
-/* Variables */
-
-/* The empty cell, mostly used for clearing the screen. It has a character
- * representation of an ascii space (' ') and default foreground and background
- * colors.
- */
-extern const struct cell empty_cell;
-
-/* The default cell buffer is stdscr and is exposed by the library.
- * This is the unitialized state.
- */
-extern struct cell_buffer stdscr;
-
 /* cursor_visible, set to 1 if cursor is visible, 0 if not. */
 extern bool cursor_visible;
 
