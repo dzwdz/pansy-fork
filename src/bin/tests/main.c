@@ -17,6 +17,7 @@ void test_bignum();
 // hashes.c
 void test_sha();
 
+void test_aes(); // aes.c
 
 // test runners are supposed to return true on success, false on failure
 struct test_runner {
@@ -30,6 +31,7 @@ struct test_runner runners[] = {
     {"string", &test_string},
     {"bignum", &test_bignum},
     {"sha", &test_sha},
+    {"aes", &test_aes},
     {NULL, NULL}
 };
 
