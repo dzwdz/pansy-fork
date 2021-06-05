@@ -8,7 +8,7 @@ CFLAGS += -Wall -Wextra
 CFLAGS += -g -lgcc
 CFLAGS += --sysroot=src
 CFLAGS += -Isrc/libc/include -O2
-CFLAGS += -maes
+CFLAGS += -maes -mssse3 -msse4
 
 KERNEL ?= deps/vmlinuz
 KFLAGS := ${KFLAGS},

@@ -1,1 +1,2 @@
 -Isrc/libc/include
+-msse3

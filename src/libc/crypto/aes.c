@@ -1,8 +1,15 @@
 #include <assert.h>
 #include <crypto/aes.h>
+#include <smmintrin.h>
 #include <wmmintrin.h>
 
 #include <tty.h> // debugging
+
+// TODO move to some header file
+inline __m128i bswap_128(__m128i i) {
+    return _mm_shuffle_epi8(i,
+        _mm_setr_epi8(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+}
 
 inline void keygen256_assist(__m128i *high, __m128i *low, __m128i *assist) {
     // assist is the value returned by _mm_aeskeygenassist
@@ -117,4 +124,33 @@ __m128i AES_encrypt_block(const AES_ctx *ctx, __m128i block) {
         block = _mm_aesenc_si128(block, ctx->key_schedule[i]);
     block = _mm_aesenclast_si128(block, ctx->key_schedule[ctx->rounds]);
     return block;
+}
+
+void AES_SDCTR_set(AES_ctx *ctx, const void *state) {
+    _mm_storeu_si128(&ctx->ctr,
+            bswap_128(_mm_loadu_si128(state)));
+}
+
+void AES_SDCTR_xcrypt(AES_ctx *ctx, void *data, size_t length) {
+    __m128i *blocks = data;
+    __m128i mask, carry;
+
+    assert(length % 16 == 0);
+    length /= 16;
+
+    for (int i = 0; i < length; i++) {
+        mask = AES_encrypt_block(ctx, bswap_128(ctx->ctr));
+
+        _mm_storeu_si128(&blocks[i],
+                _mm_xor_si128(_mm_loadu_si128(&blocks[i]), mask));
+
+        // incrementing CTR
+        const __m128i ONE = _mm_setr_epi32(1, 0, 0, 0);
+        ctx->ctr = _mm_add_epi64(ctx->ctr, ONE); // increment the low half
+
+        const __m128i ZERO = _mm_setzero_si128();
+        carry = _mm_cmpeq_epi64(ctx->ctr, ZERO); // compare both halves to 0
+        carry = _mm_unpacklo_epi64(ZERO, carry); // grab the low half's result and put it on the high half
+        ctx->ctr = _mm_sub_epi64(ctx->ctr, carry);
+    }
 }

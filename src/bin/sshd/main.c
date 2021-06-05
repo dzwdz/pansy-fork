@@ -23,6 +23,7 @@ void handle_client(int fd) {
     connection conn;
     conn.fd = fd;
     conn.sbuf = malloc(SBUF_SIZE);
+    conn.using_aes = false;
 
     id_exchange(&conn);
     printf("new connection from %s\n", conn.client_id);

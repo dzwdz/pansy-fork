@@ -1,6 +1,7 @@
 #pragma once
 #include "misc.h"
 #include <bignum.h>
+#include <crypto/aes.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -15,6 +16,9 @@ typedef struct {
 
     // algo_exchange, freed in key exchange
     iter_t client_payload, server_payload;
+
+    bool using_aes;
+    AES_ctx aes;
 } connection;
 
 iter_t read_packet(connection *conn);
