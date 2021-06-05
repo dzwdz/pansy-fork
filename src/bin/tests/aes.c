@@ -2,6 +2,7 @@
 #include <crypto/aes.h>
 #include <stdbool.h>
 #include <string.h>
+#include <wmmintrin.h>
 
 const char *key = "AES-256 needs a 32 byte long key";
 
@@ -14,6 +15,6 @@ void test_aes() {
     memcpy(buf,      "We have 16 chars", 16);
     memcpy(expected, "\x06u \xCDN\xE9h\x80S@\xF9\xF5}\xBF\x8D\xFB", 16);
 
-    AES_ECB_encrypt(&ctx, buf);
+    *(__m128i*)buf = AES_encrypt_block(&ctx, *(__m128i*)buf);
     assert(memcmp(buf, expected, 16) == 0);
 }

@@ -54,9 +54,8 @@ inline void keygen256_assist(__m128i *high, __m128i *low, __m128i *assist) {
  * no, _mm_aeskeygenassist can't be put in keygen256_assist
  * gcc requires it to have a constant argument
  */
-void AES256_key_expansion(const uint8_t *key, uint8_t *expanded) {
+void AES256_key_expansion(const uint8_t *key, __m128i *schedule) {
     __m128i high, temp2, low;
-    __m128i* schedule = (__m128i*) expanded;
 
     high = _mm_loadu_si128((__m128i*) key);
     low  = _mm_loadu_si128((__m128i*)(key + 16));
@@ -99,16 +98,23 @@ void AES256_key_expansion(const uint8_t *key, uint8_t *expanded) {
 }
 
 void AES_init(AES_ctx *ctx, const uint8_t *key, uint16_t keysize) {
-    __m128i test = _mm_loadu_si128(key);
+    __m128i test = _mm_loadu_si128((void*)key);
     hexdump(&test, 16);
     test = _mm_shuffle_epi32(test, 0xaa);
     hexdump(&test, 16);
 
     assert(keysize == 256);
-    char buf[240];
-    AES256_key_expansion(key, buf);
-    hexdump(buf, 240);
+
+    AES256_key_expansion(key, ctx->key_schedule);
+    hexdump(ctx->key_schedule, 240);
+
+    ctx->rounds = 14;
 }
 
-void AES_ECB_encrypt(const AES_ctx *ctx, uint8_t *block) {
+__m128i AES_encrypt_block(const AES_ctx *ctx, __m128i block) {
+    block = _mm_xor_si128(block, ctx->key_schedule[0]);
+    for (int i = 1; i < ctx->rounds; i++)
+        block = _mm_aesenc_si128(block, ctx->key_schedule[i]);
+    block = _mm_aesenclast_si128(block, ctx->key_schedule[ctx->rounds]);
+    return block;
 }
