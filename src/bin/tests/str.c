@@ -4,19 +4,14 @@
 #include <string.h>
 #include <str.h>
 
-bool compare_non_null_terminated_strings(str a, char* b) {
-    for (size_t i = 0; i < a.len; i++) {
-        if (a.data[i] != b[i])
-            return false;
-    }
-    return true;
-}
-
+// BE WARY! According to gdb, some of these str's gets optimized out at
+// compilation. These are tested properly with -O0 though, so it shouldn't be a
+// problem. Just be aware of this when adding new tests.
 void test_str() {
     str str1 = from_cstr("foobar");
     // do it this way since "foobar" will null-terminate it
-    char test_str[] = {'f','o','o','b','a','r'};
-    assert(compare_non_null_terminated_strings(str1, test_str));
+    char *test_str = "foobar";
+    assert(!strcmp(to_cstr(str1), test_str));
 
     str str2 = from_cstr("foobar");
     assert(str_equal(str1, str2));
