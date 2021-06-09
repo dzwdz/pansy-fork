@@ -43,4 +43,10 @@ void test_str() {
     mutstr_append(&mutable3, to_cstr(str10));
     str str11 = from_mutstr(mutable3);
     assert(str_equal(str11, str7));
+
+    mutstr mutable4 = mutstr_new("foobar", strlen("foobar"));
+    mutstr_insert(&mutable4, "a", 1);
+    str str12 = from_mutstr(mutable4);
+    str str13 = from_cstr("faoobar");
+    assert(str_equal(str12, str13));
 }

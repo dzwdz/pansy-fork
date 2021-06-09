@@ -16,7 +16,8 @@ typedef struct {
 } str;
 
 mutstr mutstr_new(char *initial, size_t len);
-void mutstr_append(mutstr* dest, char *src);
+void mutstr_append(mutstr *dest, char *src);
+void mutstr_insert(mutstr *dest, char *src, size_t index);
 
 #define to_cstr(s) ((s).data)
 str from_cstr(const char *s);

@@ -18,7 +18,6 @@ mutstr mutstr_new(char *initial, size_t len) {
     return ret;
 }
 
-
 void mutstr_append(mutstr *dest, char *src) {
     size_t srclen = strlen(src);
     if (srclen + dest->len > dest->capacity) {
@@ -29,6 +28,22 @@ void mutstr_append(mutstr *dest, char *src) {
     }
 
     strcpy(dest->data + dest->len, src);
+    dest->len += srclen;
+}
+
+void mutstr_insert(mutstr *dest, char *src, size_t index) {
+    size_t srclen = strlen(src);
+    if (srclen + dest->len > dest->capacity) {
+        // TODO: See todo notice of mutstr_append
+        return;
+    }
+
+    for (size_t i = dest->len; i >= index; i--)
+        dest->data[i + srclen] = dest->data[i];
+
+    for (size_t i = 0; i < srclen; i++)
+        dest->data[index - i] = src[i];
+
     dest->len += srclen;
 }
 
