@@ -10,6 +10,8 @@ void test_sprintf();
 // string.c
 void test_string();
 
+// str.c
+void test_str();
 
 // test runners are supposed to return true on success, false on failure
 struct test_runner {
@@ -21,6 +23,7 @@ struct test_runner runners[] = {
     {"malloc", &test_malloc},
     {"sprintf", &test_sprintf},
     {"string", &test_string},
+    {"str", &test_str},
     {NULL, NULL}
 };
 

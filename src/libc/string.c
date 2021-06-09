@@ -23,6 +23,18 @@ char *strcpy(char *dest, const char *src) {
     return og;
 }
 
+char *strncpy(char *dest, const char *src, size_t n) {
+    char *og = dest;
+    size_t srclen = strlen(src);
+    for (size_t i = 0; i < n; i++) {
+        if (i >= srclen)
+            *dest++ = 0;
+        else
+            *dest++ = *src++;
+    }
+    return og;
+}
+
 char *strcat(char *dest, const char *src) {
     size_t dest_len = strlen(dest);
 
