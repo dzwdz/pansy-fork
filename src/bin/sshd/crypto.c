@@ -142,7 +142,16 @@ iter_t RSA_sign(iter_t blob) {
     };
 
     push_string(&sig, "ssh-rsa", 7);
-    push_bignum(&sig, s);
+    { // based on push_bignum, with the high bit check removed
+      // TODO should be a library function
+        int log2 = BN_log2(s);
+        int len = (log2 >> 3) + ((log2 & 0b111) ? 1 : 0);
+
+        push_uint32(&sig, len);
+        while (len--) {
+            push_byte(&sig, *BN_byteat(s, len));
+        }
+    }
     sig.max = sig.pos;
 
     free(m.digits);
