@@ -8,3 +8,5 @@ void init_crypto();
 void diffie_hellman_group14(const bignum cl_pub, bignum our_pub,
                             bignum shared_secret);
 iter_t RSA_sign(iter_t blob);
+
+void sha256_from_iter(iter_t blob, void *target);

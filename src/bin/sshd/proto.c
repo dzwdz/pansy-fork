@@ -12,7 +12,7 @@
 #include "misc.h"
 #include "proto.h"
 #include <bignum.h>
-#include <crypto/sha256.h>
+#include <crypto/aes.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -153,12 +153,10 @@ void key_exchange(connection *conn) {
         push_bignum (&hash, our_pub);
         push_bignum (&hash, shared);
 
-        sha256_ctx ctx;
-        sha256_init(&ctx);
-        sha256_append(&ctx, hash.base, hash.pos);
-        sha256_final(&ctx);
-        sha256_digest(&ctx, &digest);
-        hexdump(digest, 32);
+        sha256_from_iter(hash, &digest);
+
+        // todo don't reset after the first KEX
+        memcpy(conn->session_id, digest, 32);
 
         // also we free the client/server payloads
         free(conn->client_payload.base);
@@ -182,9 +180,45 @@ void key_exchange(connection *conn) {
 
         // i'm lazy, let's reuse the client's packet
         send_packet(conn, packet);
+
+        conn->using_aes = true;
     }
-    { // 5. calculate the encryption keys TODO
-        read_packet(conn);
+    { // 5. calculate the encryption keys (RFC 4253 / 7.2.)
+        iter_t hash = {
+            .base = conn->sbuf,
+            .max = SBUF_SIZE,
+            .pos = 0
+        };
+        uint8_t *letter;
+
+        // garbage
+        push_bignum(&hash, shared);
+        memcpy(&hash.base[hash.pos], digest, 32);
+        hash.pos += 32;
+        letter = &hash.base[hash.pos];
+        push_byte  (&hash, 'A');
+        memcpy(&hash.base[hash.pos], conn->session_id, 32);
+        hash.pos += 32;
+
+        *letter = 'A'; // redundant
+        sha256_from_iter(hash, &digest);
+        AES_SDCTR_set(&conn->aes_c2s, &digest);
+
+        *letter = 'B';
+        sha256_from_iter(hash, &digest);
+        AES_SDCTR_set(&conn->aes_s2c, &digest);
+
+        *letter = 'C';
+        sha256_from_iter(hash, &digest);
+        AES_init(&conn->aes_c2s, (void*)&digest, 256);
+
+        *letter = 'D';
+        sha256_from_iter(hash, &digest);
+        AES_init(&conn->aes_s2c, (void*)&digest, 256);
+
+        // TODO mac keys
+        iter_t packet = read_packet(conn);
+        hexdump(packet.base, packet.max);
     }
 
     BN_free(cl_pub);

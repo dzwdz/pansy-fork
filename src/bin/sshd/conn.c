@@ -1,6 +1,7 @@
 #include "conn.h"
 #include <arpa/inet.h>
 #include <bignum.h>
+#include <crypto/aes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,6 +14,10 @@
 iter_t read_packet(connection *conn) {
     ssize_t bytes = recv(conn->fd, conn->sbuf, SBUF_SIZE, 0);
     if (bytes < 5) ssh_fatal(conn);
+
+    if (conn->using_aes) {
+        AES_SDCTR_xcrypt(&conn->aes_c2s, conn->sbuf, bytes);
+    }
 
     // the packet size is at the beginning of the buffer
     uint32_t packet_l = ntohl(*(uint32_t*)conn->sbuf);

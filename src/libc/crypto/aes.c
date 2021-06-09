@@ -105,17 +105,10 @@ void AES256_key_expansion(const uint8_t *key, __m128i *schedule) {
 }
 
 void AES_init(AES_ctx *ctx, const uint8_t *key, uint16_t keysize) {
-    __m128i test = _mm_loadu_si128((void*)key);
-    hexdump(&test, 16);
-    test = _mm_shuffle_epi32(test, 0xaa);
-    hexdump(&test, 16);
-
     assert(keysize == 256);
 
-    AES256_key_expansion(key, ctx->key_schedule);
-    hexdump(ctx->key_schedule, 240);
-
     ctx->rounds = 14;
+    AES256_key_expansion(key, ctx->key_schedule);
 }
 
 __m128i AES_encrypt_block(const AES_ctx *ctx, __m128i block) {

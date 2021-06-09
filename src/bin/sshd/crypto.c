@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <bignum.h>
 #include <crypto/sha1.h>
+#include <crypto/sha256.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -162,4 +163,12 @@ void init_crypto() {
 
     TWO = BN_new(1);
     BN_fromhex(TWO, "2");
+}
+
+void sha256_from_iter(iter_t blob, void *target) {
+    static sha256_ctx ctx;
+    sha256_init(&ctx);
+    sha256_append(&ctx, blob.base, blob.pos);
+    sha256_final(&ctx);
+    sha256_digest(&ctx, target);
 }

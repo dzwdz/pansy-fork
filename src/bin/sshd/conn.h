@@ -18,7 +18,10 @@ typedef struct {
     iter_t client_payload, server_payload;
 
     bool using_aes;
-    AES_ctx aes;
+    AES_ctx aes_c2s;
+    AES_ctx aes_s2c;
+
+    char session_id[32]; // calculated during the first KEX
 } connection;
 
 iter_t read_packet(connection *conn);
