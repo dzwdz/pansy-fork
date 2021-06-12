@@ -21,6 +21,12 @@ typedef struct {
     AES_ctx aes_c2s;
     AES_ctx aes_s2c;
 
+    bool using_mac;
+    char mac_c2s[32];
+    char mac_s2c[32];
+
+    uint32_t seq_c2s;
+
     char session_id[32]; // calculated during the first KEX
 } connection;
 

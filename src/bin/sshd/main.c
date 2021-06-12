@@ -24,6 +24,8 @@ void handle_client(int fd) {
     conn.fd = fd;
     conn.sbuf = malloc(SBUF_SIZE);
     conn.using_aes = false;
+    conn.using_mac = false;
+    conn.seq_c2s = 0;
 
     id_exchange(&conn);
     printf("new connection from %s\n", conn.client_id);

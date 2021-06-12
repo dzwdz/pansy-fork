@@ -2,6 +2,7 @@
 #include <arpa/inet.h>
 #include <bignum.h>
 #include <crypto/aes.h>
+#include <crypto/hmac.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,19 +17,33 @@ iter_t read_packet(connection *conn) {
     if (bytes < 5) ssh_fatal(conn);
 
     if (conn->using_aes) {
-        AES_SDCTR_xcrypt(&conn->aes_c2s, conn->sbuf, bytes);
+        AES_SDCTR_xcrypt(&conn->aes_c2s, conn->sbuf, 16);
     }
 
     // the packet size is at the beginning of the buffer
     uint32_t packet_l = ntohl(*(uint32_t*)conn->sbuf);
     // and the padding size is right after it
     uint8_t padding_l = conn->sbuf[4];
-    printf("%d + %d\n", packet_l, padding_l);
+    printf("%d - %d, total %d\n", packet_l, padding_l, bytes);
 
-    if (bytes < packet_l + 4 /* + mac_l*/) {
+    if (bytes < packet_l + 4 + (conn->using_mac ? 32:0)) {
         puts("fix me you dumbass"); // TODO
         ssh_fatal(conn);
     }
+
+    if (conn->using_aes && packet_l > 16) {
+        AES_SDCTR_xcrypt(&conn->aes_c2s, conn->sbuf + 16, packet_l + 4 - 16);
+    }
+
+    if (conn->using_mac) {
+        uint32_t seqn = htonl(conn->seq_c2s);
+        char mac[32];
+        HMAC_SHA256_prefix(conn->mac_c2s, 32, &seqn, 4, conn->sbuf, packet_l + 4, mac);
+        if (memcmp(conn->sbuf + packet_l + 4, mac, 32) != 0)
+            ssh_fatal(conn);
+    }
+
+    conn->seq_c2s++;
 
     iter_t iter;
     iter.base = conn->sbuf + 5;

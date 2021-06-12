@@ -182,6 +182,7 @@ void key_exchange(connection *conn) {
         send_packet(conn, packet);
 
         conn->using_aes = true;
+        conn->using_mac = true;
     }
     { // 5. calculate the encryption keys (RFC 4253 / 7.2.)
         iter_t hash = {
@@ -216,7 +217,14 @@ void key_exchange(connection *conn) {
         sha256_from_iter(hash, &digest);
         AES_init(&conn->aes_s2c, (void*)&digest, 256);
 
-        // TODO mac keys
+        *letter = 'E';
+        sha256_from_iter(hash, &digest);
+        memcpy(&conn->mac_c2s, &digest, 32);
+
+        *letter = 'F';
+        sha256_from_iter(hash, &digest);
+        memcpy(&conn->mac_s2c, &digest, 32);
+
         iter_t packet = read_packet(conn);
         hexdump(packet.base, packet.max);
     }
