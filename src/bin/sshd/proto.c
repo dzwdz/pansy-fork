@@ -91,7 +91,7 @@ void algo_negotiation(connection *conn) {
         }
         pop_uint32(&packet); // "reserved"
 
-        conn->client_payload = iterator_copy(&packet);
+        conn->c2s.initial_payload = iterator_copy(&packet);
     }
     { // s2c
         iter_t packet = start_packet(conn);
@@ -115,7 +115,7 @@ void algo_negotiation(connection *conn) {
         push_uint32 (&packet, 0); // reserved
 
         packet.max = packet.pos;
-        conn->server_payload = iterator_copy(&packet);
+        conn->s2c.initial_payload = iterator_copy(&packet);
         send_packet(conn, packet);
     }
 }
@@ -146,8 +146,8 @@ void key_exchange(connection *conn) {
 
         push_cstring(&hash, conn->client_id);
         push_cstring(&hash, SERVER_ID);
-        push_iter   (&hash, conn->client_payload);
-        push_iter   (&hash, conn->server_payload);
+        push_iter   (&hash, conn->c2s.initial_payload);
+        push_iter   (&hash, conn->s2c.initial_payload);
         push_iter   (&hash, HOST_KEY);
         push_bignum (&hash, cl_pub);
         push_bignum (&hash, our_pub);
@@ -159,8 +159,8 @@ void key_exchange(connection *conn) {
         memcpy(conn->session_id, digest, 32);
 
         // also we free the client/server payloads
-        free(conn->client_payload.base);
-        free(conn->server_payload.base);
+        free(conn->c2s.initial_payload.base);
+        free(conn->s2c.initial_payload.base);
     }
     { // 3. we send the signature, our DH pub, and our host key
         iter_t packet = start_packet(conn);
@@ -181,8 +181,10 @@ void key_exchange(connection *conn) {
         // i'm lazy, let's reuse the client's packet
         send_packet(conn, packet);
 
-        conn->using_aes = true;
-        conn->using_mac = true;
+        conn->c2s.enc = ENC_AES256;
+        conn->c2s.mac = MAC_HMAC_SHA256;
+        conn->s2c.enc = ENC_AES256;
+        conn->s2c.mac = MAC_HMAC_SHA256;
     }
     { // 5. calculate the encryption keys (RFC 4253 / 7.2.)
         iter_t hash = {
@@ -203,27 +205,27 @@ void key_exchange(connection *conn) {
 
         *letter = 'A'; // redundant
         sha256_from_iter(hash, &digest);
-        AES_SDCTR_set(&conn->aes_c2s, &digest);
+        AES_SDCTR_set(&conn->c2s.aes, &digest);
 
         *letter = 'B';
         sha256_from_iter(hash, &digest);
-        AES_SDCTR_set(&conn->aes_s2c, &digest);
+        AES_SDCTR_set(&conn->s2c.aes, &digest);
 
         *letter = 'C';
         sha256_from_iter(hash, &digest);
-        AES_init(&conn->aes_c2s, (void*)&digest, 256);
+        AES_init(&conn->c2s.aes, (void*)&digest, 256);
 
         *letter = 'D';
         sha256_from_iter(hash, &digest);
-        AES_init(&conn->aes_s2c, (void*)&digest, 256);
+        AES_init(&conn->s2c.aes, (void*)&digest, 256);
 
         *letter = 'E';
         sha256_from_iter(hash, &digest);
-        memcpy(&conn->mac_c2s, &digest, 32);
+        memcpy(&conn->c2s.mac_key, &digest, 32);
 
         *letter = 'F';
         sha256_from_iter(hash, &digest);
-        memcpy(&conn->mac_s2c, &digest, 32);
+        memcpy(&conn->s2c.mac_key, &digest, 32);
 
         iter_t packet = read_packet(conn);
         hexdump(packet.base, packet.max);

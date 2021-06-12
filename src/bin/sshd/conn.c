@@ -10,14 +10,28 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+static void init_conn_side(struct conn_side *side) {
+    side->seq = 0;
+    side->enc = ENC_NONE;
+    side->mac = MAC_NONE;
+}
+
+void init_connection(connection *conn, int fd) {
+    conn->fd = fd;
+    conn->sbuf = malloc(SBUF_SIZE);
+
+    init_conn_side(&conn->c2s);
+    init_conn_side(&conn->s2c);
+}
+
 // reads a single packet into conn.sbuf
 // RFC 4253 / 6.
 iter_t read_packet(connection *conn) {
     ssize_t bytes = recv(conn->fd, conn->sbuf, SBUF_SIZE, 0);
     if (bytes < 5) ssh_fatal(conn);
 
-    if (conn->using_aes) {
-        AES_SDCTR_xcrypt(&conn->aes_c2s, conn->sbuf, 16);
+    if (conn->c2s.enc == ENC_AES256) {
+        AES_SDCTR_xcrypt(&conn->c2s.aes, conn->sbuf, 16);
     }
 
     // the packet size is at the beginning of the buffer
@@ -26,24 +40,24 @@ iter_t read_packet(connection *conn) {
     uint8_t padding_l = conn->sbuf[4];
     printf("%d - %d, total %d\n", packet_l, padding_l, bytes);
 
-    if (bytes < packet_l + 4 + (conn->using_mac ? 32:0)) {
+    if (bytes < packet_l + 4 + (conn->c2s.mac ? 32:0)) {
         puts("fix me you dumbass"); // TODO
         ssh_fatal(conn);
     }
 
-    if (conn->using_aes && packet_l > 16) {
-        AES_SDCTR_xcrypt(&conn->aes_c2s, conn->sbuf + 16, packet_l + 4 - 16);
+    if (conn->c2s.enc && packet_l > 16) {
+        AES_SDCTR_xcrypt(&conn->c2s.aes, conn->sbuf + 16, packet_l + 4 - 16);
     }
 
-    if (conn->using_mac) {
-        uint32_t seqn = htonl(conn->seq_c2s);
+    if (conn->c2s.mac) {
+        uint32_t seqn = htonl(conn->c2s.seq);
         char mac[32];
-        HMAC_SHA256_prefix(conn->mac_c2s, 32, &seqn, 4, conn->sbuf, packet_l + 4, mac);
+        HMAC_SHA256_prefix(conn->c2s.mac_key, 32, &seqn, 4, conn->sbuf, packet_l + 4, mac);
         if (memcmp(conn->sbuf + packet_l + 4, mac, 32) != 0)
             ssh_fatal(conn);
     }
 
-    conn->seq_c2s++;
+    conn->c2s.seq++;
 
     iter_t iter;
     iter.base = conn->sbuf + 5;

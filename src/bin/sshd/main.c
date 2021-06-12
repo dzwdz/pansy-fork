@@ -21,11 +21,7 @@ const char *SERVER_ID = "SSH-2.0-pansy";
 
 void handle_client(int fd) {
     connection conn;
-    conn.fd = fd;
-    conn.sbuf = malloc(SBUF_SIZE);
-    conn.using_aes = false;
-    conn.using_mac = false;
-    conn.seq_c2s = 0;
+    init_connection(&conn, fd);
 
     id_exchange(&conn);
     printf("new connection from %s\n", conn.client_id);

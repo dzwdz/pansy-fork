@@ -7,6 +7,22 @@
 
 #define SBUF_SIZE 16384
 
+enum EncAlgo { ENC_NONE, ENC_AES256 };
+enum MacAlgo { MAC_NONE, MAC_HMAC_SHA256};
+
+struct conn_side {
+    // algo_exchange, freed in key exchange
+    iter_t initial_payload;
+
+    enum EncAlgo enc;
+    AES_ctx aes;
+
+    enum MacAlgo mac;
+    char mac_key[32];
+
+    uint32_t seq;
+};
+
 typedef struct {
     int fd;
     uint8_t *sbuf;
@@ -14,21 +30,12 @@ typedef struct {
     // id_exchange
     char *client_id;
 
-    // algo_exchange, freed in key exchange
-    iter_t client_payload, server_payload;
-
-    bool using_aes;
-    AES_ctx aes_c2s;
-    AES_ctx aes_s2c;
-
-    bool using_mac;
-    char mac_c2s[32];
-    char mac_s2c[32];
-
-    uint32_t seq_c2s;
+    struct conn_side c2s, s2c;
 
     char session_id[32]; // calculated during the first KEX
 } connection;
+
+void init_connection(connection *conn, int fd);
 
 iter_t read_packet(connection *conn);
 iter_t start_packet(connection *conn);
